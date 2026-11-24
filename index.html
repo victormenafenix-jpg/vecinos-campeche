@@ -65,6 +65,10 @@ details{margin-top:16px}summary{cursor:pointer;font-weight:600;color:var(--sky);
 #ineBox{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;z-index:30;padding:16px}#ineBox img{max-width:100%;max-height:80vh;border-radius:10px;background:#fff}
 #ineBox div{display:grid;gap:10px;justify-items:center;color:#fff}
 .hide{display:none!important}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:40;display:grid;place-items:center;padding:12px;overflow:auto}
+.mbox{background:var(--card);color:var(--ink);border-radius:14px;padding:14px;width:min(520px,100%);display:grid;gap:10px}
+.fotobtns{display:flex;gap:8px;flex-wrap:wrap}.fotobtns label{display:inline-flex;align-items:center;cursor:pointer}
+.pick{height:240px;border-radius:12px;border:1.5px solid var(--line);z-index:0}
 footer{color:var(--mut);font-size:13px;border-top:1px solid var(--line)}
 @media(max-width:600px){.row,.row2{grid-template-columns:1fr}.ine{grid-template-columns:96px minmax(0,1fr)}.res div{grid-template-columns:6em minmax(0,1fr) 2.5em}}
 </style>
@@ -147,7 +151,7 @@ const PUB={
    <label>Nombre completo<input id="iNom" required minlength="3" maxlength="120" autocomplete="name"></label>
    <div class="row"><label>WhatsApp<input id="iTel" required inputmode="tel" maxlength="20" placeholder="981 000 0000"></label><label>Correo <small>(opcional)</small><input id="iMail" type="email" maxlength="120"></label></div>
    <div class="row"><label>Fecha de nacimiento <small>(para felicitarte)</small><input id="iNac" type="date"></label><label>Vive en la casa como<select id="iTipo"><option>Dueño</option><option>Inquilino</option><option>Familiar del dueño</option></select></label></div>
-   <div class="ine"><div class="ph" id="iPrev">Foto INE</div><label>Foto de la INE, solo el frente<input id="iFoto" type="file" accept="image/*" required><small>Se guarda cerrada: solo la ve el comité. Puedes pedir que se borre.</small></label></div>
+   <div class="ine"><div class="ph" id="iPrev">Foto INE</div><div style="display:grid;gap:6px"><b>Foto de la INE, solo el frente</b>${fotoBtns('iFoto','Tomar foto de la INE')}<small class="hint">Después de tomarla podrás girarla y acomodarla en el recuadro. Se guarda cerrada: solo la ve el comité.</small></div></div>
    <label>Últimos 4 caracteres de tu clave de elector<input id="iU4" required maxlength="4" pattern="[A-Za-z0-9]{4}" autocapitalize="characters"><small>Vienen en tu INE. Te los pediremos cada vez que votes, para saber que eres tú.</small></label>
    <fieldset><legend>Representante (opcional)</legend><p class="hint" style="margin:0">Para personas mayores: el familiar que vota y recibe avisos a su nombre.</p>
     <div class="row"><label>Nombre<input id="iRep" maxlength="120"></label><label>WhatsApp<input id="iRepTel" inputmode="tel" maxlength="20"></label></div></fieldset>
@@ -165,7 +169,7 @@ const PUB={
   if(pre){$('iCalle').value=pre[0];$('iNum').value=pre[1]}
   let foto=null,geo=null;
   $('iGeo').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');$('iGeoM').textContent='Buscando…';navigator.geolocation.getCurrentPosition(p=>{geo=[p.coords.latitude,p.coords.longitude];$('iGeoM').textContent='Ubicación guardada ✓'},()=>{$('iGeoM').textContent='No se pudo. Revisa que la ubicación esté activada.'},{enableHighAccuracy:true,timeout:15000})};
-  $('iFoto').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{foto=b;$('iPrev').innerHTML=`<img src="${URL.createObjectURL(b)}" alt="Vista previa">`},'image/jpeg',.8)};im.src=r.result};r.readAsDataURL(f)};
+  bindFoto('iFoto',async f=>{try{foto=await editarINE(f);$('iPrev').innerHTML=`<img src="${URL.createObjectURL(foto)}" alt="Vista previa de la INE">`}catch(x){if(x)err(x)}});
   $('fIns').onsubmit=async e=>{e.preventDefault();const m=$('iMsg');m.className='msg';
    const em=$('eSan').value||$('eAle').value.trim()||$('eSal').value.trim()||$('eCN').value.trim()||$('eCT').value.trim();
    if(($('eCN').value.trim()||$('eCP').value)&&!$('eCT').value.trim()){$('eCT').focus();toast('Falta el teléfono del contacto de emergencia.');return}
@@ -207,18 +211,13 @@ const PUB={
  },
  async reportes(){
   app.innerHTML=`<h2>Reportes del fraccionamiento</h2><p class="lead">Luminarias apagadas, fugas, basura, baches… El comité les da seguimiento y los lleva al Ayuntamiento. Para algo urgente llama al 911.</p>
-  ${YO?`<details open><summary>Hacer un reporte</summary><form id="fRp"><label>Tipo<select id="rpC">${RCATS.map(c=>`<option>${c}</option>`).join('')}</select></label><label>¿Qué pasa?<input id="rpT" required minlength="3" maxlength="120" placeholder="Luminaria apagada frente al 70"></label><label>Detalle <small>(opcional)</small><textarea id="rpX" maxlength="800"></textarea></label><label>¿Dónde?<input id="rpL" maxlength="150" placeholder="Calle Granizo, esquina con Tormenta"></label>
-   <div class="vote"><button type="button" class="btn sm alt" id="rpG">Usar mi ubicación</button><span class="meta" id="rpGM"></span></div>
-   <label>Foto <small>(opcional)</small><input id="rpF" type="file" accept="image/*"></label><button class="btn" id="rpB">Enviar reporte</button><p class="para">Tu nombre no se muestra a los demás vecinos; solo el comité sabe quién reportó.</p></form></details>`:'<p class="note">Para hacer reportes necesitas tu link personal, que te manda el comité cuando quedas validado. Aquí puedes ver los que ya están.</p>'}
+  ${YO?`<details open><summary>Hacer un reporte</summary>${FORM_REP()}</details>`:'<p class="note">Para hacer reportes necesitas tu link personal, que te manda el comité cuando quedas validado. Aquí puedes ver los que ya están.</p>'}
   <div class="chips" id="rpCh"></div><div id="rpL2">Cargando…</div>`;
   let est='Todos',L=[],geo=null;
   const draw=()=>{$('rpCh').innerHTML=['Todos','Recibido','En atención','Resuelto'].map(c=>`<button type="button" class="${c===est?'on':''}" data-e="${c}">${c}</button>`).join('');$('rpL2').innerHTML=dibReportes(L.filter(r=>est==='Todos'||r.estado===est))};
   const load=async()=>{const {data,error}=await SB.from('reportes').select('*').eq('fracc_id',FR.id).order('created_at',{ascending:false}).limit(100);if(error)throw error;L=data;draw()};
   $('rpCh').onclick=e=>{if(e.target.dataset.e){est=e.target.dataset.e;draw()}};
-  if(YO){$('rpG').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');$('rpGM').textContent='Buscando…';navigator.geolocation.getCurrentPosition(p=>{geo=[p.coords.latitude,p.coords.longitude];$('rpGM').textContent='Ubicación lista ✓'},()=>{$('rpGM').textContent='No se pudo.'},{enableHighAccuracy:true,timeout:15000})};
-   $('fRp').onsubmit=async e=>{e.preventDefault();$('rpB').disabled=true;try{const id=await rpc('reportar',{p_token:TOKEN,p:{cat:$('rpC').value,titulo:$('rpT').value,texto:$('rpX').value,lugar:$('rpL').value,lat:geo?geo[0]:'',lng:geo?geo[1]:''}});
-    const f=$('rpF').files[0];if(f){const b=await comprimir(f,1400);const {error}=await SB.storage.from('reportes').upload(`${FR.id}/${id}.jpg`,b,{contentType:'image/jpeg'});if(!error)await rpc('marcar_foto_reporte',{p_id:id})}
-    e.target.reset();geo=null;$('rpGM').textContent='';toast('¡Reporte enviado! El comité le dará seguimiento.');load()}catch(x){err(x)}finally{$('rpB').disabled=false}}}
+  if(YO)bindFormReporte(async(d,foto)=>{const id=await rpc('reportar',{p_token:TOKEN,p:d});await subirFotoRep(id,foto);load()});
   load().catch(err);
  },
  async emerg(){app.innerHTML=`<h2>Teléfonos de emergencia</h2><p class="lead">Toca un número para llamar. Si tu celular no marca, el número también está escrito.</p><div id="tL">Cargando…</div>`;$('tL').innerHTML=await dibTels(FR)},
@@ -329,7 +328,7 @@ const ST={
  },
  async mapa(){
   app.innerHTML=`<h2>Mapa de ${esc(FR.nombre)}</h2><p class="lead">Cada punto es una casa con ubicación guardada: verde validada, naranja pendiente, gris sin inscritos. Toca un punto o una casa de la lista para ver quién vive ahí, su foto, datos de emergencia y notas.</p>
-  <div id="lmap" style="height:min(60vh,420px);border-radius:14px;border:1.5px solid var(--line);z-index:0"></div><p class="para" id="mHint">Mapa de OpenStreetMap.</p>
+  <div id="lmap" style="height:min(60vh,420px);border-radius:14px;border:1.5px solid var(--line);z-index:0"></div><div class="vote"><button type="button" class="btn sm alt" id="mYo">Ir a donde estoy</button><span class="para" id="mHint">Toca una casa de la lista; si no tiene ubicación, luego tocas el mapa en su lugar.</span></div>
   <div id="mI"></div>
   <h3 style="margin:18px 0 8px">Casas</h3><div class="tools"><input id="mB" placeholder="Buscar (ej. Granizo 70)" aria-label="Buscar casa"></div>
   <details style="margin:0 0 12px"><summary>Agregar una casa</summary><form id="fCa"><div class="row2"><label>Calle<select id="caC">${(FR.calles||[]).map(c=>`<option>${esc(c.n)}</option>`).join('')}</select></label><label>Número<input id="caN" required maxlength="12"></label></div><button class="btn sm">Agregar</button><p class="para">Para poner la foto y la ubicación de una casa aunque todavía nadie se inscriba.</p></form></details>
@@ -345,9 +344,9 @@ const ST={
    $('mL').innerHTML=cs.filter(c=>!q||c.casa.toLowerCase().includes(q)).map(c=>`<button class="per card" style="width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;margin-bottom:6px${mapSel===c.casa?';border-color:var(--sun)':''}" data-k="${esc(c.casa)}"><p><b>${esc(c.casa)}</b><small>${c.ps.length} inscritos${c.lat?'':' · sin ubicación'}${c.foto_path?'':' · sin foto'}</small></p><span class="tag ${ST_C[c.st]}">${ST_T[c.st]}</span></button>`).join('')||'<p class="lead">Todavía no hay casas.</p>';
    info(cs.find(c=>c.casa===mapSel))};
   const info=async c=>{if(!c){$('mI').innerHTML='';return}const ns=N.filter(x=>x.casa===c.casa);
-   $('mI').innerHTML=`<div class="card" style="margin-top:12px"><div class="top"><h3>${esc(c.casa)}</h3><span class="tag ${ST_C[c.st]}">${ST_T[c.st]}</span></div>
+   $('mI').innerHTML=`<div class="card" style="margin-top:12px"><div class="top"><h3>${esc(c.casa)}</h3>${c.lat?'':'<span class="tag p">Sin ubicación en el mapa</span>'}<span class="tag ${ST_C[c.st]}">${ST_T[c.st]}</span></div>
    <div id="mFoto" class="ph" style="aspect-ratio:16/10;margin:8px 0;border-style:${c.foto_path?'solid':'dashed'}">${c.foto_path?'Cargando foto…':'Sin foto de la fachada'}</div>
-   <div class="vote"><label class="btn sm alt" style="display:inline-flex;cursor:pointer">${c.foto_path?'Cambiar foto':'Subir foto de la fachada'}<input type="file" accept="image/*" id="mF" class="hide"></label>
+   <div class="vote">${fotoBtns('mF',c.foto_path?'Tomar foto nueva':'Tomar foto de la fachada')}
    <button class="btn sm alt" id="mGeo">Estoy frente a la casa: guardar ubicación</button><button class="btn sm ghost" id="mTap">Marcar tocando el mapa</button></div>
    <p class="para">Toma tú la foto desde la calle, con permiso del dueño. No uses capturas de Google Maps. Solo la ve el comité.</p>
    <h3 style="margin-top:14px">Quién vive aquí</h3>${c.ps.map(filaVecino).join('')||'<p class="meta">Nadie inscrito todavía.</p>'}
@@ -357,14 +356,17 @@ const ST={
    $('fN').onsubmit=async e=>{e.preventDefault();const {error}=await SB.from('notas').insert({fracc_id:FR.id,casa:c.casa,texto:$('nT').value.trim()});if(error)return err(error);load()};
    $('mGeo').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');toast('Buscando tu ubicación…');navigator.geolocation.getCurrentPosition(async p=>{try{await guarda({lat:p.coords.latitude,lng:p.coords.longitude});toast('Ubicación guardada.');map.setView([p.coords.latitude,p.coords.longitude],18);load()}catch(x){err(x)}},()=>toast('No se pudo. Activa la ubicación del celular.'),{enableHighAccuracy:true,timeout:15000})};
    $('mTap').onclick=()=>{marcar=async ll=>{try{await guarda({lat:ll.lat,lng:ll.lng});toast('Ubicación guardada.');load()}catch(x){err(x)}};$('mHint').textContent='Ahora toca en el mapa el lugar exacto de '+c.casa+'.';$('lmap').scrollIntoView({behavior:'smooth'})};
-   $('mF').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{toast('Subiendo foto…');const b=await comprimir(f,1400),ruta=`${FR.id}/${c.casa.normalize('NFD').replace(/[^\w]+/g,'-').toLowerCase()}-${Date.now()}.jpg`;
-    const {error}=await SB.storage.from('casas').upload(ruta,b,{contentType:'image/jpeg'});if(error)throw error;if(c.foto_path)await SB.storage.from('casas').remove([c.foto_path]);await guarda({foto_path:ruta});toast('Foto guardada.');load()}catch(x){err(x)}};
+   bindFoto('mF',async f=>{try{toast('Subiendo foto…');const b=await comprimir(f,1400),ruta=`${FR.id}/${c.casa.normalize('NFD').replace(/[^\w]+/g,'-').toLowerCase()}-${Date.now()}.jpg`;
+    const {error}=await SB.storage.from('casas').upload(ruta,b,{contentType:'image/jpeg'});if(error)throw error;if(c.foto_path)await SB.storage.from('casas').remove([c.foto_path]);await guarda({foto_path:ruta});toast('Foto guardada.');load()}catch(x){err(x)}});
    if(c.foto_path){const {data}=await SB.storage.from('casas').createSignedUrl(c.foto_path,300);if(data&&$('mFoto'))$('mFoto').innerHTML=`<img src="${data.signedUrl}" alt="Fachada de ${esc(c.casa)}">`}
   };
-  map.on('click',e=>{if(!marcar)return;const f=marcar;marcar=null;$('mHint').textContent='Mapa de OpenStreetMap.';f(e.latlng)});
-  const load=async()=>{V=await vecinosFR();const n=await SB.from('notas').select('*').eq('fracc_id',FR.id).order('created_at');if(n.error)throw n.error;N=n.data;const c=await SB.from('casas').select('*').eq('fracc_id',FR.id);if(c.error)throw c.error;C=c.data;draw()};
+  map.on('click',e=>{if(!marcar)return;const f=marcar;marcar=null;$('mHint').textContent='Ubicación guardada.';f(e.latlng)});
+  let centrado=!!FR.lat;
+  const load=async()=>{V=await vecinosFR();const n=await SB.from('notas').select('*').eq('fracc_id',FR.id).order('created_at');if(n.error)throw n.error;N=n.data;const c=await SB.from('casas').select('*').eq('fracc_id',FR.id);if(c.error)throw c.error;C=c.data;if(!centrado){const k=C.find(x=>x.lat);if(k){map.setView([k.lat,k.lng],17);centrado=true}}draw()};
   $('mB').oninput=draw;
-  $('mL').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;mapSel=b.dataset.k;const c=C.find(x=>x.casa===mapSel);if(c&&c.lat)map.setView([c.lat,c.lng],18);draw();$('mI').scrollIntoView({behavior:'smooth'})};
+  $('mYo').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],18),()=>toast('No se pudo. Activa la ubicación del celular.'),{enableHighAccuracy:true,timeout:15000})};
+  $('mL').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;mapSel=b.dataset.k;const c=C.find(x=>x.casa===mapSel);draw();
+   if(c&&c.lat){map.setView([c.lat,c.lng],18);$('mI').scrollIntoView({behavior:'smooth'})}else setTimeout(()=>{const t=$('mTap');if(t)t.click();toast('Esta casa aún no está en el mapa: toca el mapa en su lugar exacto.')},50)};
   $('mI').onclick=async e=>{const b=e.target.closest('[data-a]');if(b)return accionVecino(b.dataset.a,b.dataset.id,V,load);
    const n=e.target.dataset.n,nd=e.target.dataset.nd;if(n){const x=N.find(y=>y.id==n);const {error}=await SB.from('notas').update({estado:x.estado==='Pendiente'?'Concluido':'Pendiente'}).eq('id',n);if(error)return err(error);load()}
    if(nd&&await confirmar('¿Borrar esta nota?')){const {error}=await SB.from('notas').delete().eq('id',nd);if(error)return err(error);load()}};
@@ -383,11 +385,12 @@ const ST={
   load().catch(err);
  },
  async reportes(){
-  app.innerHTML=`<h2>Reportes de los vecinos</h2><p class="lead">Cambia el estado según avance: Recibido, En atención o Resuelto. La respuesta la ven todos los vecinos.</p><div class="chips" id="rpCh"></div><div id="rpL2">Cargando…</div>`;
+  app.innerHTML=`<h2>Reportes</h2><p class="lead">Cambia el estado según avance: Recibido, En atención o Resuelto. La respuesta la ven todos los vecinos.</p><details><summary>Hacer un reporte (comité)</summary>${FORM_REP()}</details><div class="chips" id="rpCh" style="margin-top:14px"></div><div id="rpL2">Cargando…</div>`;
   let est='Recibido',L=[],V=[];
   const draw=()=>{$('rpCh').innerHTML=['Recibido','En atención','Resuelto','Todos'].map(c=>`<button type="button" class="${c===est?'on':''}" data-e="${c}">${c} ${c==='Todos'?'':'('+L.filter(r=>r.estado===c).length+')'}</button>`).join('');
    $('rpL2').innerHTML=dibReportes(L.filter(r=>est==='Todos'||r.estado===est),r=>{const v=V.find(x=>x.id===r.vecino_id);return `${v?`<p class="para">Reportó: ${esc(v.nombre)} · ${esc(v.calle+' '+v.numero)} · ${esc(v.tel)}</p>`:''}<div class="vote"><select data-r="${r.id}" style="flex:1 1 150px;width:auto" aria-label="Estado">${['Recibido','En atención','Resuelto'].map(x=>`<option${x===r.estado?' selected':''}>${x}</option>`).join('')}</select><input data-rr="${r.id}" value="${esc(r.respuesta||'')}" maxlength="500" placeholder="Respuesta para los vecinos" style="flex:2 1 200px;width:auto"><button class="btn sm" data-g="${r.id}">Guardar</button><button class="btn sm ghost" data-x="${r.id}">Borrar</button></div>`})};
   const load=async()=>{const {data,error}=await SB.from('reportes').select('*').eq('fracc_id',FR.id).order('created_at',{ascending:false});if(error)throw error;L=data;V=await vecinosFR();draw()};
+  let abierto=false;app.querySelector('details').addEventListener('toggle',e=>{if(e.target.open&&!abierto){abierto=true;bindFormReporte(async(d,foto)=>{if(!d.titulo)throw new Error('Escribe qué pasa.');const {data,error}=await SB.from('reportes').insert({fracc_id:FR.id,cat:d.cat,titulo:d.titulo,texto:d.texto||null,lugar:d.lugar||null,lat:d.lat||null,lng:d.lng||null}).select('id').single();if(error)throw error;await subirFotoRep(data.id,foto);est='Recibido';load()})}});
   $('rpCh').onclick=e=>{if(e.target.dataset.e){est=e.target.dataset.e;draw()}};
   $('rpL2').onclick=async e=>{const g=e.target.dataset.g,x=e.target.dataset.x;
    if(g){const {error}=await SB.from('reportes').update({estado:$('rpL2').querySelector(`[data-r="${g}"]`).value,respuesta:$('rpL2').querySelector(`[data-rr="${g}"]`).value.trim()||null,updated_at:new Date().toISOString()}).eq('id',g);if(error)return err(error);toast('Guardado.');load()}
@@ -471,6 +474,52 @@ const ST={
 };
 
 /* ---------- dibujos compartidos ---------- */
+const fotoBtns=(id,txt)=>`<div class="fotobtns"><label class="btn sm">${txt||'Tomar foto'}<input type="file" accept="image/*" capture="environment" id="${id}Cam" class="hide"></label><label class="btn sm alt">Elegir de la galería<input type="file" accept="image/*" id="${id}Gal" class="hide"></label></div>`;
+function bindFoto(id,cb){[id+'Cam',id+'Gal'].forEach(k=>{const el=$(k);if(el)el.onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)cb(f)}})}
+function editarINE(file){return new Promise((ok,no)=>{const url=URL.createObjectURL(file),im=new Image();im.onerror=()=>no(new Error('No se pudo leer la foto.'));im.onload=()=>{
+ const box=document.createElement('div');box.className='modal';box.innerHTML=`<div class="mbox"><h3>Acomoda tu INE dentro del recuadro</h3><p class="para">Mueve la foto con el dedo. Gírala con los botones y usa las barras para acercar o enderezar. Solo se guarda lo que queda dentro del recuadro.</p>
+ <canvas id="ieC" style="width:100%;touch-action:none;border-radius:10px;background:#111"></canvas>
+ <div class="vote"><button type="button" class="btn sm alt" id="ieL">Girar a la izquierda</button><button type="button" class="btn sm alt" id="ieR">Girar a la derecha</button></div>
+ <label>Acercar o alejar<input type="range" id="ieZ" step="0.001"></label><label>Enderezar un poquito<input type="range" id="ieF" min="-20" max="20" step="0.5" value="0"></label>
+ <div class="vote"><button type="button" class="btn" id="ieOk">Usar esta foto</button><button type="button" class="btn ghost" id="ieNo">Cancelar</button></div></div>`;
+ document.body.append(box);const q=x=>box.querySelector(x);
+ const cv=q('#ieC'),W=900,H=720;cv.width=W;cv.height=H;const g=cv.getContext('2d');
+ const GW=W*0.9,GH=GW/1.586,GX=(W-GW)/2,GY=(H-GH)/2;let rot=0,fine=0,ox=W/2,oy=H/2;
+ const fit=()=>{const r=rot%180===0,iw=r?im.width:im.height,ih=r?im.height:im.width;return Math.max(GW/iw,GH/ih)};
+ let s=fit();const z=q('#ieZ');const rango=()=>{const f=fit();z.min=f*0.4;z.max=f*4;z.value=s};rango();
+ const pinta=(c,out)=>{c.save();c.translate(ox,oy);c.rotate((rot+fine)*Math.PI/180);c.scale(s,s);c.drawImage(im,-im.width/2,-im.height/2);c.restore();
+  if(!out){c.save();c.fillStyle='rgba(0,0,0,.6)';c.beginPath();c.rect(0,0,W,H);c.rect(GX,GY,GW,GH);c.fill('evenodd');c.strokeStyle='#fff';c.lineWidth=4;c.setLineDash([18,12]);c.strokeRect(GX,GY,GW,GH);c.restore()}};
+ const draw=()=>{g.fillStyle='#111';g.fillRect(0,0,W,H);pinta(g)};draw();
+ let p=null;cv.onpointerdown=e=>{p=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)};
+ cv.onpointermove=e=>{if(!p)return;const k=W/cv.clientWidth;ox+=(e.clientX-p[0])*k;oy+=(e.clientY-p[1])*k;p=[e.clientX,e.clientY];draw()};
+ cv.onpointerup=cv.onpointercancel=()=>{p=null};
+ z.oninput=()=>{s=+z.value;draw()};q('#ieF').oninput=e=>{fine=+e.target.value;draw()};
+ q('#ieL').onclick=()=>{rot=(rot+270)%360;s=fit();ox=W/2;oy=H/2;rango();draw()};q('#ieR').onclick=()=>{rot=(rot+90)%360;s=fit();ox=W/2;oy=H/2;rango();draw()};
+ q('#ieNo').onclick=()=>{box.remove();URL.revokeObjectURL(url);no(null)};
+ q('#ieOk').onclick=()=>{const OW=1000,OH=Math.round(OW/1.586),o=document.createElement('canvas');o.width=OW;o.height=OH;const c=o.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,OW,OH);c.scale(OW/GW,OW/GW);c.translate(-GX,-GY);pinta(c,true);
+  o.toBlob(b=>{box.remove();URL.revokeObjectURL(url);b?ok(b):no(new Error('No se pudo procesar la foto.'))},'image/jpeg',.85)};
+ };im.src=url})}
+const FORM_REP=()=>`<form id="fRp"><label>Tipo<select id="rpC">${RCATS.map(c=>`<option>${c}</option>`).join('')}</select></label>
+ <label>¿Qué pasa?<input id="rpT" required minlength="3" maxlength="120" placeholder="Bache frente al número 39"></label>
+ <label>Detalle <small>(opcional)</small><textarea id="rpX" maxlength="800"></textarea></label>
+ <label>¿Dónde? <small>(calle y referencia)</small><input id="rpL" maxlength="150" placeholder="Calle Nevada, frente al 39"></label>
+ <p class="hint" style="margin:0"><b>Marca el lugar:</b> toca el botón si estás ahí, o toca el mapa en el punto exacto.</p>
+ <div class="vote"><button type="button" class="btn sm alt" id="rpG">Estoy aquí: usar mi ubicación</button><span class="meta" id="rpGM">Sin marcar</span></div>
+ <div id="rpMap" class="pick"></div>
+ <p class="hint" style="margin:0"><b>Foto</b> (opcional, ayuda mucho):</p>${fotoBtns('rpF')}<div id="rpPrev"></div>
+ <button class="btn" id="rpB">Enviar reporte</button></form>`;
+function bindFormReporte(enviar){
+ let geo=null,foto=null,mk=null;const m=LF.map('rpMap').setView(FR.lat?[FR.lat,FR.lng]:CAMPECHE,FR.lat?17:14);
+ LF.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(m);
+ const pon=ll=>{geo=[ll.lat,ll.lng];if(mk)mk.setLatLng(ll);else mk=LF.marker(ll).addTo(m);$('rpGM').textContent='Lugar marcado ✓'};
+ m.on('click',e=>pon(e.latlng));
+ $('rpG').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');$('rpGM').textContent='Buscando…';navigator.geolocation.getCurrentPosition(p=>{const ll=LF.latLng(p.coords.latitude,p.coords.longitude);pon(ll);m.setView(ll,18)},()=>{$('rpGM').textContent='No se pudo. Activa la ubicación o toca el mapa.'},{enableHighAccuracy:true,timeout:15000})};
+ bindFoto('rpF',async f=>{try{foto=await comprimir(f,1400);$('rpPrev').innerHTML=`<img src="${URL.createObjectURL(foto)}" alt="Foto del reporte" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px">`}catch(x){err(x)}});
+ $('fRp').onsubmit=async e=>{e.preventDefault();$('rpB').disabled=true;try{await enviar({cat:$('rpC').value,titulo:$('rpT').value.trim(),texto:$('rpX').value.trim(),lugar:$('rpL').value.trim(),lat:geo?geo[0]:'',lng:geo?geo[1]:''},foto);
+  e.target.reset();geo=null;foto=null;if(mk){m.removeLayer(mk);mk=null}$('rpGM').textContent='Sin marcar';$('rpPrev').innerHTML='';toast('¡Reporte enviado!')}catch(x){err(x)}finally{$('rpB').disabled=false}};
+ setTimeout(()=>m.invalidateSize(),200);
+}
+async function subirFotoRep(id,foto){if(!foto)return;const {error}=await SB.storage.from('reportes').upload(`${FR.id}/${id}.jpg`,foto,{contentType:'image/jpeg'});if(!error)await rpc('marcar_foto_reporte',{p_id:id})}
 const FORM_CAND=`<details><summary>Agregar candidatura (solo registros oficiales)</summary><form id="fCd">
  <label>Cargo<select id="cdC"><option>Gubernatura</option><option>Diputación federal</option><option>Diputación local</option><option>Presidencia municipal</option></select></label>
  <div class="row"><label>Distrito <small>(solo diputaciones, ej. 01)</small><input id="cdD" maxlength="10"></label><label>Municipio <small>(solo presidencia)</small><input id="cdM" maxlength="60" placeholder="Campeche"></label></div>
