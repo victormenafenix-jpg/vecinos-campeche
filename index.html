@@ -6,18 +6,18 @@
 <title>Vecinos en Red</title>
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#f05a28">
+<meta name="theme-color" content="#2b2f36">
 <link rel="apple-touch-icon" href="icono-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:light dark;--bg:light-dark(#ffffff,#121420);--ink:light-dark(#1b1d2a,#f1efe9);--mut:light-dark(#5d6070,#a6a9b8);--sun:#f05a28;--sunk:light-dark(#c8441a,#ff8a5c);--sky:light-dark(#2457c5,#8fb0ff);--soft:light-dark(#fff1ea,#2a1b15);--skys:light-dark(#eaf0fd,#18223d);--line:light-dark(#e6e2dc,#2c2f3d);--card:light-dark(#ffffff,#1a1c29);--ok:light-dark(#1d7a46,#6fd39b);--no:light-dark(#b3261e,#ff8f86)}
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#16181c);--ink:light-dark(#1f2226,#eceef0);--mut:light-dark(#5f646b,#a3a8ae);--sun:#2b2f36;--sunk:light-dark(#5f646b,#c4c8cc);--sky:light-dark(#3d4249,#d2d5d9);--soft:light-dark(#f2f2f0,#24272c);--skys:light-dark(#eceef0,#23262b);--line:light-dark(#dfe1e3,#33373d);--card:light-dark(#ffffff,#1d2024);--ok:light-dark(#1f2226,#eceef0);--no:light-dark(#9b2c2c,#f0a3a3)}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
 h1,h2,h3{font-family:Archivo,system-ui,sans-serif;line-height:1.1;text-wrap:balance;margin:0}
 h1{font-size:clamp(28px,6vw,42px);font-weight:800}h2{font-size:23px;font-weight:800;margin-bottom:6px}h3{font-size:18px;font-weight:600}
 .band{padding:clamp(18px,4vw,36px) max(5vw,16px)}.wrap{max-width:880px;margin:0 auto}
-header{background:var(--sun);color:#fff}header p{margin:6px 0 0;opacity:.95}
+header{background:#2b2f36;color:#fff}header p{margin:6px 0 0;opacity:.95}
 header .wrap{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap}
 header a{color:#fff}
 .bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}.bar .wrap{padding:8px max(5vw,16px) 0}
@@ -33,7 +33,7 @@ textarea{min-height:80px;resize:vertical}:focus-visible{outline:3px solid var(--
 .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.row2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
 .chk{display:flex;gap:10px;align-items:flex-start;font-weight:400}.chk input{width:22px;height:22px;min-height:0;flex:none;margin-top:2px}
 fieldset{border:1.5px solid var(--line);border-radius:12px;padding:14px;margin:0;display:grid;gap:12px}legend{font-weight:600;padding:0 6px}
-.btn{font:inherit;font-weight:600;border:0;border-radius:10px;min-height:44px;padding:10px 18px;cursor:pointer;background:var(--sun);color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn{font:inherit;font-weight:600;border:0;border-radius:10px;min-height:44px;padding:10px 18px;cursor:pointer;background:var(--ink);color:var(--bg);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .btn.alt{background:var(--skys);color:var(--sky)}.btn.ghost{background:transparent;color:var(--sky);border:1.5px solid var(--line)}.btn.sm{min-height:38px;padding:6px 12px;font-size:14px}
 .btn:disabled{opacity:.5;cursor:wait}
 .ine{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center;background:var(--soft);border-radius:12px;padding:12px}
@@ -93,7 +93,7 @@ const Q=new URLSearchParams(location.search);
 const BASE=location.origin+location.pathname;
 let tT;function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(tT);tT=setTimeout(()=>e.style.display='none',4200)}
 const NOAUT='No estás autorizado. Esto solo lo puede hacer el comité.';
-const LAB={favor:'A favor',contra:'En contra',abst:'Abstención'},COL={favor:'var(--ok)',contra:'var(--no)',abst:'var(--mut)'};
+const LAB={favor:'A favor',contra:'En contra',abst:'Abstención'},COL={favor:'var(--ink)',contra:'#8c9198',abst:'#c9ccd0'};
 const CATS=['Cultural','Ventas','Servicios','Comunidad','Comité','Político'];
 const telMX=t=>{let d=String(t||'').replace(/\D/g,'');if(d.length===10)d='52'+d;return d};
 const fmt$=n=>'$'+(+n||0).toLocaleString('es-MX',{maximumFractionDigits:2});
@@ -153,7 +153,10 @@ const PUB={
     <div class="row"><label>Nombre<input id="iRep" maxlength="120"></label><label>WhatsApp<input id="iRepTel" inputmode="tel" maxlength="20"></label></div></fieldset>
    <fieldset><legend>Datos de emergencia (opcional)</legend><p class="hint" style="margin:0">Para que el comité sepa cómo ayudar si te pasa algo. Solo los ve el comité.</p>
     <div class="row"><label>Tipo de sangre<select id="eSan"><option value="">No sé / prefiero no decir</option>${['O+','O-','A+','A-','B+','B-','AB+','AB-'].map(x=>`<option>${x}</option>`).join('')}</select></label><label>Alergias<input id="eAle" maxlength="200"></label></div>
-    <label>Algo importante de salud<input id="eSal" maxlength="200"></label><label>Contacto de emergencia<input id="eCto" maxlength="150" placeholder="Nombre y teléfono"></label>
+    <label>Algo importante de salud<input id="eSal" maxlength="200"></label>
+    <p class="hint" style="margin:0"><b>¿A quién llamamos si te pasa algo?</b></p>
+    <label>Nombre<input id="eCN" maxlength="120" placeholder="Ana Mena"></label>
+    <div class="row"><label>Parentesco<select id="eCP"><option value="">Escoge</option><option>Esposo(a)</option><option>Hijo(a)</option><option>Nieto(a)</option><option>Hermano(a)</option><option>Papá / Mamá</option><option>Otro familiar</option><option>Vecino(a) / amigo(a)</option></select></label><label>Teléfono<input id="eCT" inputmode="tel" maxlength="20" placeholder="981 000 0000"></label></div>
     <label class="chk"><input type="checkbox" id="eOk">Autorizo que el comité guarde estos datos de salud solo para emergencias.</label></fieldset>
    <label class="chk"><input type="checkbox" id="iMay" required>Soy mayor de 18 años y vivo en este domicilio.</label>
    <label class="chk"><input type="checkbox" id="iAv" required>Acepto que mis datos sean solo para el comité de ${esc(FR.nombre)}, sin publicidad ni campañas, y que puedo pedir que se borren.</label>
@@ -164,11 +167,12 @@ const PUB={
   $('iGeo').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');$('iGeoM').textContent='Buscando…';navigator.geolocation.getCurrentPosition(p=>{geo=[p.coords.latitude,p.coords.longitude];$('iGeoM').textContent='Ubicación guardada ✓'},()=>{$('iGeoM').textContent='No se pudo. Revisa que la ubicación esté activada.'},{enableHighAccuracy:true,timeout:15000})};
   $('iFoto').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{foto=b;$('iPrev').innerHTML=`<img src="${URL.createObjectURL(b)}" alt="Vista previa">`},'image/jpeg',.8)};im.src=r.result};r.readAsDataURL(f)};
   $('fIns').onsubmit=async e=>{e.preventDefault();const m=$('iMsg');m.className='msg';
-   const em=$('eSan').value||$('eAle').value.trim()||$('eSal').value.trim()||$('eCto').value.trim();
+   const em=$('eSan').value||$('eAle').value.trim()||$('eSal').value.trim()||$('eCN').value.trim()||$('eCT').value.trim();
+   if(($('eCN').value.trim()||$('eCP').value)&&!$('eCT').value.trim()){$('eCT').focus();toast('Falta el teléfono del contacto de emergencia.');return}
    if(em&&!$('eOk').checked){$('eOk').focus();toast('Para guardar datos de emergencia, marca la casilla de autorización.');return}
    if(!foto){toast('Falta la foto de la INE.');return}
    $('iBtn').disabled=true;m.textContent='Enviando…';
-   try{const id=await rpc('inscribir',{p:{fracc:FR.id,calle:$('iCalle').value,numero:$('iNum').value,nombre:$('iNom').value,tel:$('iTel').value,correo:$('iMail').value,nac:$('iNac').value,tipo:$('iTipo').value,ult4:$('iU4').value,rep_nombre:$('iRep').value,rep_tel:$('iRepTel').value,mayor:$('iMay').checked,aviso:$('iAv').checked,em_ok:$('eOk').checked,sangre:$('eSan').value,alergias:$('eAle').value,salud:$('eSal').value,contacto:$('eCto').value,lat:geo?geo[0]:'',lng:geo?geo[1]:''}});
+   try{const id=await rpc('inscribir',{p:{fracc:FR.id,calle:$('iCalle').value,numero:$('iNum').value,nombre:$('iNom').value,tel:$('iTel').value,correo:$('iMail').value,nac:$('iNac').value,tipo:$('iTipo').value,ult4:$('iU4').value,rep_nombre:$('iRep').value,rep_tel:$('iRepTel').value,mayor:$('iMay').checked,aviso:$('iAv').checked,em_ok:$('eOk').checked,sangre:$('eSan').value,alergias:$('eAle').value,salud:$('eSal').value,c_nombre:$('eCN').value,c_parentesco:$('eCP').value,c_tel:$('eCT').value,lat:geo?geo[0]:'',lng:geo?geo[1]:''}});
     const {error}=await SB.storage.from('ine').upload(`${FR.id}/${id}.jpg`,foto,{contentType:'image/jpeg',upsert:false});
     if(error)throw new Error('Se guardó tu inscripción pero no subió la foto. Avísale al comité.');
     await rpc('marcar_ine',{p_id:id});
@@ -275,12 +279,12 @@ async function verINE(v){try{if(!(await rpc('log_ine',{p_vecino:v.id})))return t
 $('ineCerrar').onclick=()=>{$('ineBox').style.display='none';$('ineImg').src=''};
 const linkPersonal=v=>`${BASE}?f=${v.fracc_id}&t=${v.token}`;
 const waLink=(tel,txt)=>`https://wa.me/${telMX(tel)}?text=${encodeURIComponent(txt)}`;
-function emTxt(e){if(!e)return'';const x=[e.sangre&&'Sangre '+e.sangre,e.alergias&&'Alergia: '+e.alergias,e.salud,e.contacto&&'Avisar a '+e.contacto].filter(Boolean);return x.length?`<small style="color:var(--no)">Emergencia: ${x.map(esc).join(' · ')}</small>`:''}
+function emTxt(e){if(!e)return'';const c=[e.contacto_nombre,e.contacto_parentesco&&'('+e.contacto_parentesco+')'].filter(Boolean).join(' ');const t=e.contacto_tel||e.contacto;const x=[e.sangre&&'Sangre '+e.sangre,e.alergias&&'Alergia: '+e.alergias,e.salud].filter(Boolean).map(esc);if(c||t)x.push('Avisar a '+esc(c||'contacto')+(t?` · <a href="tel:${esc(String(t).replace(/[^\d+]/g,''))}">${esc(t)}</a>`:''));return x.length?`<small style="color:var(--no)">Emergencia: ${x.join(' · ')}</small>`:''}
 function filaVecino(v){
  const tel=v.rep_tel||v.tel,msg=`Hola ${v.nombre.split(' ')[0]}, ya quedaste validado en el padrón de ${FR.nombre}. Este es tu link personal para votar y confirmar asistencia (no lo compartas): ${linkPersonal(v)}`;
  return `<div class="per"><p><b>${esc(v.nombre)}</b><small>${esc(v.tipo||'')} · ${esc(v.tel)}${v.rep_nombre?' · Representante: '+esc(v.rep_nombre)+' '+esc(v.rep_tel||''):''}</small>
  <small>${v.ine_path?'INE guardada (cerrada)':v.ine_borrada?'INE borrada a petición':'Sin foto de INE'}${v.validado_en?' · Validado el '+new Date(v.validado_en).toLocaleDateString('es-MX'):''}</small>${emTxt(v.emergencias)}</p>
- <span class="acts">${v.estado==='Validado'?'<span class="tag v">Validado</span>':`<button class="btn sm" data-a="val" data-id="${v.id}">Validar</button>`}
+ <span class="acts">${v.estado==='Validado'?'<span class="tag v">✓ Validado</span>':`<button class="btn sm" data-a="val" data-id="${v.id}">Validar</button>`}
  ${v.ine_path?`<button class="btn sm alt" data-a="ver" data-id="${v.id}">Ver INE</button><button class="btn sm ghost" data-a="borrar" data-id="${v.id}">Borrar INE</button>`:''}
  ${v.estado==='Validado'?`<a class="btn sm alt" href="${waLink(tel,msg)}">Mandar su link</a>`:''}
  <button class="btn sm ghost" data-a="baja" data-id="${v.id}">Dar de baja</button></span></div>`;
@@ -326,9 +330,9 @@ const ST={
   LF.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);capa.addTo(map);
   const casas=()=>{const m={};C.forEach(c=>m[c.casa]={...c});V.forEach(v=>{const k=v.calle+' '+v.numero;m[k]??={casa:k,calle:v.calle,numero:v.numero}});
    return Object.values(m).map(c=>{const ps=V.filter(v=>v.calle+' '+v.numero===c.casa);c.ps=ps;c.st=!ps.length?0:ps.every(v=>v.estado==='Validado')?2:1;return c}).sort((a,b)=>a.calle.localeCompare(b.calle)||(parseInt(a.numero)||0)-(parseInt(b.numero)||0))};
-  const COLS=['#8a8d99','#f08a4b','#1d9a5a'],ST_T=['Sin inscritos','Pendiente','Validada'],ST_C=['g','p','v'];
+  const COLS=['#ffffff','#a9adb3','#2b2f36'],ST_T=['Sin inscritos','Pendiente','Validada'],ST_C=['g','p','v'];
   const draw=()=>{const cs=casas(),q=$('mB').value.toLowerCase();capa.clearLayers();
-   cs.filter(c=>c.lat).forEach(c=>LF.circleMarker([c.lat,c.lng],{radius:mapSel===c.casa?12:9,color:'#fff',weight:2,fillColor:COLS[c.st],fillOpacity:1}).bindTooltip(c.casa).on('click',()=>{mapSel=c.casa;draw()}).addTo(capa));
+   cs.filter(c=>c.lat).forEach(c=>LF.circleMarker([c.lat,c.lng],{radius:mapSel===c.casa?12:9,color:'#2b2f36',weight:2,fillColor:COLS[c.st],fillOpacity:1}).bindTooltip(c.casa).on('click',()=>{mapSel=c.casa;draw()}).addTo(capa));
    $('mL').innerHTML=cs.filter(c=>!q||c.casa.toLowerCase().includes(q)).map(c=>`<button class="per card" style="width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;margin-bottom:6px${mapSel===c.casa?';border-color:var(--sun)':''}" data-k="${esc(c.casa)}"><p><b>${esc(c.casa)}</b><small>${c.ps.length} inscritos${c.lat?'':' · sin ubicación'}${c.foto_path?'':' · sin foto'}</small></p><span class="tag ${ST_C[c.st]}">${ST_T[c.st]}</span></button>`).join('')||'<p class="lead">Todavía no hay casas.</p>';
    info(cs.find(c=>c.casa===mapSel))};
   const info=async c=>{if(!c){$('mI').innerHTML='';return}const ns=N.filter(x=>x.casa===c.casa);
