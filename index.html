@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vecinos en Red</title>
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f05a28">
+<link rel="apple-touch-icon" href="icono-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#121420);--ink:light-dark(#1b1d2a,#f1efe9);--mut:light-dark(#5d6070,#a6a9b8);--sun:#f05a28;--sunk:light-dark(#c8441a,#ff8a5c);--sky:light-dark(#2457c5,#8fb0ff);--soft:light-dark(#fff1ea,#2a1b15);--skys:light-dark(#eaf0fd,#18223d);--line:light-dark(#e6e2dc,#2c2f3d);--card:light-dark(#ffffff,#1a1c29);--ok:light-dark(#1d7a46,#6fd39b);--no:light-dark(#b3261e,#ff8f86)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Archivo,system-ui,sans-serif;line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,6vw,42px);font-weight:800}h2{font-size:23px;font-weight:800;margin-bottom:6px}h3{font-size:18px;font-weight:600}
+.band{padding:clamp(18px,4vw,36px) max(5vw,16px)}.wrap{max-width:880px;margin:0 auto}
+header{background:var(--sun);color:#fff}header p{margin:6px 0 0;opacity:.95}
+header .wrap{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap}
+header a{color:#fff}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}.bar .wrap{padding:8px max(5vw,16px) 0}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs a{flex:none;padding:10px 13px;min-height:44px;color:var(--mut);text-decoration:none;font-weight:600;border-bottom:3px solid transparent}
+.tabs a.on{color:var(--ink);border-color:var(--sun)}
+.view{display:none}.view.on{display:block}
+.lead{color:var(--mut);margin:0 0 16px}.para{font-size:14px;color:var(--mut);margin:4px 0 0}
+form{display:grid;gap:14px}label{display:grid;gap:5px;font-weight:600;font-size:15px}
+label small,.hint{font-weight:400;color:var(--mut);font-size:13px}
+select,input,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px;width:100%}
+textarea{min-height:80px;resize:vertical}:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.row2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-weight:400}.chk input{width:22px;height:22px;min-height:0;flex:none;margin-top:2px}
+fieldset{border:1.5px solid var(--line);border-radius:12px;padding:14px;margin:0;display:grid;gap:12px}legend{font-weight:600;padding:0 6px}
+.btn{font:inherit;font-weight:600;border:0;border-radius:10px;min-height:44px;padding:10px 18px;cursor:pointer;background:var(--sun);color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn.alt{background:var(--skys);color:var(--sky)}.btn.ghost{background:transparent;color:var(--sky);border:1.5px solid var(--line)}.btn.sm{min-height:38px;padding:6px 12px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:wait}
+.ine{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center;background:var(--soft);border-radius:12px;padding:12px}
+.ph{aspect-ratio:1.58;border-radius:8px;border:2px dashed var(--sunk);display:grid;place-items:center;font-size:12px;color:var(--sunk);overflow:hidden;background:var(--card)}.ph img{width:100%;height:100%;object-fit:cover}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--skys);border-radius:12px;padding:12px}.stat b{display:block;font:800 clamp(22px,5vw,30px)/1 Archivo,sans-serif;color:var(--sky)}.stat span{font-size:13px;color:var(--mut)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tools>*{flex:1 1 160px;width:auto}
+.card{border:1.5px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;background:var(--card)}
+.card .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}.card p{margin:6px 0}
+.casa{border:1.5px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.casa>h3{background:var(--soft);padding:10px 14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.casa>h3 span{font:400 13px Inter,sans-serif;color:var(--mut)}
+.per{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
+.per p{margin:0}.per small{color:var(--mut);display:block}.acts{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:13px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap;display:inline-block}
+.tag.v{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}.tag.p{background:var(--soft);color:var(--sunk)}.tag.r{background:color-mix(in srgb,var(--no) 14%,transparent);color:var(--no)}.tag.g{background:var(--line);color:var(--mut)}
+.res{display:grid;gap:6px;margin:12px 0}.res div{display:grid;grid-template-columns:7em minmax(0,1fr) 3em;gap:8px;align-items:center;font-size:14px}
+.res i{display:block;height:12px;border-radius:6px;background:var(--line);overflow:hidden}.res i b{display:block;height:100%;border-radius:6px}.res em{font-style:normal;text-align:right}
+.vote{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chips button{font:inherit;font-size:14px;font-weight:600;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;min-height:40px;padding:6px 14px;cursor:pointer}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.cat{font-size:12px;font-weight:600;color:var(--sky)}.meta{font-size:14px;color:var(--mut)}
+.note{background:var(--skys);border-radius:12px;padding:12px 14px;font-size:14px;margin:0 0 16px}
+.warn{background:var(--soft);border-radius:12px;padding:12px 14px;font-size:14px;margin:0 0 16px}
+.msg{min-height:1.4em;font-weight:600;margin:0}.msg.ok{color:var(--ok)}.msg.err{color:var(--no)}
+details{margin-top:16px}summary{cursor:pointer;font-weight:600;color:var(--sky);min-height:44px;display:flex;align-items:center}
+.map{overflow-x:auto;padding:8px}.map svg{display:block;height:auto}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:92vw;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:600;z-index:20;display:none;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+#ineBox{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;z-index:30;padding:16px}#ineBox img{max-width:100%;max-height:80vh;border-radius:10px;background:#fff}
+#ineBox div{display:grid;gap:10px;justify-items:center;color:#fff}
+.hide{display:none!important}
+footer{color:var(--mut);font-size:13px;border-top:1px solid var(--line)}
+@media(max-width:600px){.row,.row2{grid-template-columns:1fr}.ine{grid-template-columns:96px minmax(0,1fr)}.res div{grid-template-columns:6em minmax(0,1fr) 2.5em}}
+</style>
+</head>
+<body>
+<header class="band"><div class="wrap">
+  <div><h1 id="hTit">Vecinos en Red</h1><p id="hSub">Padrón, avisos y consultas del fraccionamiento.</p></div>
+  <div id="hUser" class="hint" style="color:#fff"></div>
+</div></header>
+<div class="bar"><div class="wrap"><nav class="tabs" id="tabs"></nav></div></div>
+
+<main class="band"><div class="wrap" id="app"><p class="lead">Cargando…</p></div></main>
+<div id="toast" role="alert"></div>
+<div id="ineBox" role="dialog" aria-label="INE"><div><img id="ineImg" alt="Foto de la INE"><button class="btn" id="ineCerrar">Cerrar</button><small>Quedó anotado en la bitácora que abriste esta INE.</small></div></div>
+<footer class="band"><div class="wrap">Vecinos en Red · Los datos son solo para el comité de cada fraccionamiento. No se usan para publicidad ni campañas. Puedes pedir que se borren tus datos con el comité.</div></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+{
+const LF=window.L,CAMPECHE=[19.8454,-90.5237];
+const SB=supabase.createClient('https://wfxmkictnhqizpuftgvd.supabase.co','sb_publishable_Ll3XWrZf2hfdQlrU3bmqxQ_t_9Y6o_A');
+const $=id=>document.getElementById(id), app=$('app');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const Q=new URLSearchParams(location.search);
+const BASE=location.origin+location.pathname;
+let tT;function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(tT);tT=setTimeout(()=>e.style.display='none',4200)}
+const NOAUT='No estás autorizado. Esto solo lo puede hacer el comité.';
+const LAB={favor:'A favor',contra:'En contra',abst:'Abstención'},COL={favor:'var(--ok)',contra:'var(--no)',abst:'var(--mut)'};
+const CATS=['Cultural','Ventas','Servicios','Comunidad','Comité','Político'];
+const telMX=t=>{let d=String(t||'').replace(/\D/g,'');if(d.length===10)d='52'+d;return d};
+const fmt$=n=>'$'+(+n||0).toLocaleString('es-MX',{maximumFractionDigits:2});
+const err=e=>{const m=(e&&e.message)||String(e);toast(/permission|policy|row-level|not authorized|autorizado/i.test(m)?NOAUT:m)};
+async function rpc(n,a){const {data,error}=await SB.rpc(n,a);if(error)throw error;return data}
+
+let FR=null, FRS=[], staff=null, tab='', mapSel=null;
+
+function setTabs(list){$('tabs').innerHTML=list.map(([k,t])=>`<a href="#${k}" data-k="${k}">${t}</a>`).join('');}
+function markTab(){document.querySelectorAll('#tabs a').forEach(a=>a.classList.toggle('on',a.dataset.k===tab))}
+
+/* ---------- arranque ---------- */
+async function init(){
+ const {data}=await SB.from('fraccionamientos').select('*').order('nombre');FRS=data||[];
+ if(Q.get('v'))return vistaCandidato(Q.get('v'));
+ const {data:{session}}=await SB.auth.getSession();
+ if(location.hash==='#comite'||session){if(session)return entrarStaff();return vistaLogin()}
+ FR=FRS.find(f=>f.id===Q.get('f'));
+ if(!FR)return vistaInicio();
+ publico();
+}
+window.addEventListener('hashchange',()=>{if(location.hash==='#comite'&&!staff){vistaLogin();return}route()});
+function route(){let h=location.hash.slice(1);if(!ROUTES[h])h=Object.keys(ROUTES)[0];if(!h)return;tab=h;markTab();ROUTES[h]()}
+let ROUTES={},PRE=null;
+
+function vistaInicio(){
+ setTabs([]);$('hTit').textContent='Vecinos en Red';
+ app.innerHTML=`<h2>Escoge tu fraccionamiento</h2><p class="lead">Cada fraccionamiento tiene su propio padrón. Toca el tuyo para inscribirte o ver los avisos.</p>
+ ${FRS.map(f=>`<a class="card" style="display:block;text-decoration:none;color:inherit" href="?f=${f.id}"><h3>${esc(f.nombre)}</h3><span class="meta">Inscribirme y ver avisos</span></a>`).join('')}
+ <p><a class="btn ghost" href="#comite">Entrar como comité</a></p><p class="para">Solo para validadores y administrador. Los vecinos no necesitan cuenta.</p>`;
+}
+
+/* ---------- PÚBLICO / VECINO ---------- */
+let TOKEN=Q.get('t'), YO=null;
+async function publico(){
+ $('hTit').textContent=FR.nombre;$('hSub').textContent='Padrón, avisos y consultas de tu fraccionamiento.';
+ if(TOKEN){try{YO=await rpc('yo',{p_token:TOKEN})}catch(e){YO=null}if(!YO||YO.fracc!==FR.id){YO=null;TOKEN=null;toast('Tu link personal no es válido para este fraccionamiento.')}}
+ if(YO)$('hUser').textContent=`Hola, ${YO.nombre.split(' ')[0]} · ${YO.casa}`;
+ const t=YO?[['avisos','Avisos'],['reportes','Reportes'],['consultas','Consultas'],['apoyos','Apoyos'],['emerg','Emergencias'],['repres','Quién te representa'],['visitas','Visitas'],['reglas','Reglas']]:[['inscribirme','Inscribirme'],['avisos','Avisos'],['reportes','Reportes'],['emerg','Emergencias'],['repres','Quién te representa'],['visitas','Visitas'],['reglas','Reglas']];
+ setTabs(t);ROUTES={};t.forEach(([k])=>ROUTES[k]=PUB[k]);route();
+}
+const PUB={
+ inscribirme(){const pre=PRE;PRE=null;
+  const calles=FR.calles||[];
+  if(!calles.length){app.innerHTML=`<h2>Inscripción al padrón</h2><p class="warn">El comité todavía está cargando las calles de ${esc(FR.nombre)}. Vuelve pronto.</p>`;return}
+  app.innerHTML=`<h2>Inscripción al padrón</h2>
+  <p class="lead">Cada adulto de la casa se inscribe por separado. Un hijo o nieto puede llenarlo por sus papás o abuelos.</p>
+  <form id="fIns">
+   <div class="row2"><label>Calle<select id="iCalle" required>${calles.map(c=>`<option>${esc(c.n)}</option>`).join('')}</select></label><label>Número<input id="iNum" required maxlength="12" inputmode="numeric"></label></div>
+   <div class="note" style="margin:0"><b>¿Estás en tu casa ahorita?</b> Toca el botón para guardar su ubicación en el mapa del comité (opcional).<div class="vote"><button type="button" class="btn sm alt" id="iGeo">Guardar ubicación de mi casa</button><span class="meta" id="iGeoM"></span></div></div>
+   <label>Nombre completo<input id="iNom" required minlength="3" maxlength="120" autocomplete="name"></label>
+   <div class="row"><label>WhatsApp<input id="iTel" required inputmode="tel" maxlength="20" placeholder="981 000 0000"></label><label>Correo <small>(opcional)</small><input id="iMail" type="email" maxlength="120"></label></div>
+   <div class="row"><label>Fecha de nacimiento <small>(para felicitarte)</small><input id="iNac" type="date"></label><label>Vive en la casa como<select id="iTipo"><option>Dueño</option><option>Inquilino</option><option>Familiar del dueño</option></select></label></div>
+   <div class="ine"><div class="ph" id="iPrev">Foto INE</div><label>Foto de la INE, solo el frente<input id="iFoto" type="file" accept="image/*" required><small>Se guarda cerrada: solo la ve el comité. Puedes pedir que se borre.</small></label></div>
+   <label>Últimos 4 caracteres de tu clave de elector<input id="iU4" required maxlength="4" pattern="[A-Za-z0-9]{4}" autocapitalize="characters"><small>Vienen en tu INE. Te los pediremos cada vez que votes, para saber que eres tú.</small></label>
+   <fieldset><legend>Representante (opcional)</legend><p class="hint" style="margin:0">Para personas mayores: el familiar que vota y recibe avisos a su nombre.</p>
+    <div class="row"><label>Nombre<input id="iRep" maxlength="120"></label><label>WhatsApp<input id="iRepTel" inputmode="tel" maxlength="20"></label></div></fieldset>
+   <fieldset><legend>Datos de emergencia (opcional)</legend><p class="hint" style="margin:0">Para que el comité sepa cómo ayudar si te pasa algo. Solo los ve el comité.</p>
+    <div class="row"><label>Tipo de sangre<select id="eSan"><option value="">No sé / prefiero no decir</option>${['O+','O-','A+','A-','B+','B-','AB+','AB-'].map(x=>`<option>${x}</option>`).join('')}</select></label><label>Alergias<input id="eAle" maxlength="200"></label></div>
+    <label>Algo importante de salud<input id="eSal" maxlength="200"></label><label>Contacto de emergencia<input id="eCto" maxlength="150" placeholder="Nombre y teléfono"></label>
+    <label class="chk"><input type="checkbox" id="eOk">Autorizo que el comité guarde estos datos de salud solo para emergencias.</label></fieldset>
+   <label class="chk"><input type="checkbox" id="iMay" required>Soy mayor de 18 años y vivo en este domicilio.</label>
+   <label class="chk"><input type="checkbox" id="iAv" required>Acepto que mis datos sean solo para el comité de ${esc(FR.nombre)}, sin publicidad ni campañas, y que puedo pedir que se borren.</label>
+   <button class="btn" type="submit" id="iBtn">Enviar inscripción</button><p class="para">Tu inscripción le llega al comité para que la valide. Cuando quede validada te mandan por WhatsApp tu link personal para votar.</p>
+   <p class="msg" id="iMsg" role="status"></p></form>`;
+  if(pre){$('iCalle').value=pre[0];$('iNum').value=pre[1]}
+  let foto=null,geo=null;
+  $('iGeo').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');$('iGeoM').textContent='Buscando…';navigator.geolocation.getCurrentPosition(p=>{geo=[p.coords.latitude,p.coords.longitude];$('iGeoM').textContent='Ubicación guardada ✓'},()=>{$('iGeoM').textContent='No se pudo. Revisa que la ubicación esté activada.'},{enableHighAccuracy:true,timeout:15000})};
+  $('iFoto').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{foto=b;$('iPrev').innerHTML=`<img src="${URL.createObjectURL(b)}" alt="Vista previa">`},'image/jpeg',.8)};im.src=r.result};r.readAsDataURL(f)};
+  $('fIns').onsubmit=async e=>{e.preventDefault();const m=$('iMsg');m.className='msg';
+   const em=$('eSan').value||$('eAle').value.trim()||$('eSal').value.trim()||$('eCto').value.trim();
+   if(em&&!$('eOk').checked){$('eOk').focus();toast('Para guardar datos de emergencia, marca la casilla de autorización.');return}
+   if(!foto){toast('Falta la foto de la INE.');return}
+   $('iBtn').disabled=true;m.textContent='Enviando…';
+   try{const id=await rpc('inscribir',{p:{fracc:FR.id,calle:$('iCalle').value,numero:$('iNum').value,nombre:$('iNom').value,tel:$('iTel').value,correo:$('iMail').value,nac:$('iNac').value,tipo:$('iTipo').value,ult4:$('iU4').value,rep_nombre:$('iRep').value,rep_tel:$('iRepTel').value,mayor:$('iMay').checked,aviso:$('iAv').checked,em_ok:$('eOk').checked,sangre:$('eSan').value,alergias:$('eAle').value,salud:$('eSal').value,contacto:$('eCto').value,lat:geo?geo[0]:'',lng:geo?geo[1]:''}});
+    const {error}=await SB.storage.from('ine').upload(`${FR.id}/${id}.jpg`,foto,{contentType:'image/jpeg',upsert:false});
+    if(error)throw new Error('Se guardó tu inscripción pero no subió la foto. Avísale al comité.');
+    await rpc('marcar_ine',{p_id:id});
+    e.target.reset();$('iPrev').textContent='Foto INE';foto=null;m.className='msg ok';m.textContent='¡Listo! Tu inscripción quedó pendiente. El comité la revisará y te escribirá por WhatsApp.';
+   }catch(x){m.className='msg err';m.textContent=x.message}finally{$('iBtn').disabled=false}};
+ },
+ async avisos(){
+  app.innerHTML=`<h2>Avisos de ${esc(FR.nombre)}</h2><p class="lead">Eventos, ventas de vecinos, servicios y noticias de la comunidad.${YO?' Toca "Voy a asistir" para que el organizador sepa cuántos van.':' Para confirmar asistencia necesitas tu link personal, que te manda el comité cuando quedas validado.'}</p><div class="chips" id="aCh"></div><div id="aL">Cargando…</div>
+  ${YO?`<details><summary>Publicar un aviso</summary><form id="fAv"><label>Categoría<select id="aCat"><option>Cultural</option><option>Ventas</option><option>Servicios</option><option>Comunidad</option></select></label><label>Título<input id="aTit" required minlength="3" maxlength="120"></label><label>Detalle<textarea id="aTxt" maxlength="1000"></textarea></label><div class="row"><label>Fecha<input id="aFec" maxlength="60"></label><label>Lugar<input id="aLug" maxlength="120"></label></div><button class="btn">Publicar</button><p class="para">Máximo 3 avisos al día. Los avisos políticos solo los publica el comité al aprobar una visita.</p></form></details>`:''}`;
+  let cat='Todos',L=[];
+  const draw=()=>{$('aCh').innerHTML=['Todos',...CATS].map(c=>`<button type="button" class="${c===cat?'on':''}" data-c="${c}">${c}</button>`).join('');
+   $('aL').innerHTML=L.filter(a=>cat==='Todos'||a.cat===cat).map(a=>`<div class="card"><span class="cat">${esc(a.cat)}</span><h3>${esc(a.titulo)}</h3>${a.texto?`<p>${esc(a.texto)}</p>`:''}<p class="meta">${esc(a.fecha||'')}${a.lugar?' · '+esc(a.lugar):''}</p><div class="vote"><button class="btn sm ${a.yo?'':'alt'}" data-a="${a.id}">${a.yo?'Voy a asistir ✓':'Voy a asistir'}</button><span class="meta">${a.asis} confirmaron</span></div></div>`).join('')||'<p class="lead">No hay avisos todavía.</p>'};
+  const load=async()=>{L=await rpc('avisos_publicos',{p_fracc:FR.id,p_token:TOKEN});draw()};
+  $('aCh').onclick=e=>{if(e.target.dataset.c){cat=e.target.dataset.c;draw()}};
+  $('aL').onclick=async e=>{const id=e.target.dataset.a;if(!id)return;if(!TOKEN){toast('Necesitas tu link personal para confirmar asistencia.');return}try{const r=await rpc('asistir',{p_token:TOKEN,p_aviso:+id});if(r!=='ok'&&r!=='quitado')toast(r);load()}catch(x){err(x)}};
+  if(YO)$('fAv').onsubmit=async e=>{e.preventDefault();try{const r=await rpc('publicar_aviso_vecino',{p_token:TOKEN,p:{cat:$('aCat').value,titulo:$('aTit').value,texto:$('aTxt').value,fecha:$('aFec').value,lugar:$('aLug').value}});if(r!=='ok')return toast(r);e.target.reset();toast('Aviso publicado.');load()}catch(x){err(x)}};
+  load().catch(err);
+ },
+ async consultas(){
+  app.innerHTML=`<h2>Consultas y votaciones</h2><p class="note">Por persona: vota cada adulto validado. Por casa: un solo voto por domicilio. Para votar escribe los últimos 4 caracteres de tu clave de elector.</p><div id="cL">Cargando…</div>`;
+  const load=async()=>{const L=await rpc('consultas_vecino',{p_token:TOKEN});
+   $('cL').innerHTML=L.map(c=>{const tot=c.favor+c.contra+c.abst;return `<div class="card"><div class="top"><span class="tag ${c.tipo==='casa'?'p':'v'}">${c.tipo==='casa'?'Voto por casa':'Voto por persona'}</span><span class="meta">${c.abierta?'Abierta':'Cerrada'} · ${tot} votos</span></div><h3>${esc(c.pregunta)}</h3>
+   <div class="res">${Object.keys(LAB).map(k=>{const pc=tot?Math.round(c[k]*100/tot):0;return `<div><span>${LAB[k]}</span><i><b style="width:${pc}%;background:${COL[k]}"></b></i><em>${c[k]}</em></div>`}).join('')}</div>
+   ${c.votado?`<p class="tag v">${c.tipo==='casa'?'Tu casa ya votó':'Ya votaste'}</p>`:c.abierta?`<div class="vote"><input data-u="${c.id}" maxlength="4" placeholder="Últimos 4 de tu clave" style="flex:1 1 150px;width:auto" aria-label="Últimos 4 de tu clave de elector">${Object.keys(LAB).map(k=>`<button class="btn sm ${k==='favor'?'':'alt'}" data-c="${c.id}" data-o="${k}">${LAB[k]}</button>`).join('')}</div>`:''}</div>`}).join('')||'<p class="lead">No hay consultas por ahora.</p>'};
+  $('cL').onclick=async e=>{const o=e.target.dataset.o;if(!o)return;const id=e.target.dataset.c,u=$('cL').querySelector(`[data-u="${id}"]`).value;if(u.length!==4){toast('Escribe los últimos 4 caracteres de tu clave de elector.');return}
+   try{const r=await rpc('votar',{p_token:TOKEN,p_consulta:+id,p_opcion:o,p_ult4:u});if(r!=='ok')return toast(r);toast('¡Tu voto quedó registrado!');load()}catch(x){err(x)}};
+  load().catch(err);
+ },
+ async apoyos(){
+  app.innerHTML=`<h2>Apoyos y donaciones</h2><p class="note">Lo que entra y lo que se entrega, a la vista de todos los vecinos validados. La cuenta es del comité, nunca de una persona.</p><div id="dL">Cargando…</div>`;
+  try{const L=await rpc('apoyos_vecino',{p_token:TOKEN});$('dL').innerHTML=dibApoyos(L)}catch(x){err(x)}
+ },
+ async reportes(){
+  app.innerHTML=`<h2>Reportes del fraccionamiento</h2><p class="lead">Luminarias apagadas, fugas, basura, baches… El comité les da seguimiento y los lleva al Ayuntamiento. Para algo urgente llama al 911.</p>
+  ${YO?`<details open><summary>Hacer un reporte</summary><form id="fRp"><label>Tipo<select id="rpC">${RCATS.map(c=>`<option>${c}</option>`).join('')}</select></label><label>¿Qué pasa?<input id="rpT" required minlength="3" maxlength="120" placeholder="Luminaria apagada frente al 70"></label><label>Detalle <small>(opcional)</small><textarea id="rpX" maxlength="800"></textarea></label><label>¿Dónde?<input id="rpL" maxlength="150" placeholder="Calle Granizo, esquina con Tormenta"></label>
+   <div class="vote"><button type="button" class="btn sm alt" id="rpG">Usar mi ubicación</button><span class="meta" id="rpGM"></span></div>
+   <label>Foto <small>(opcional)</small><input id="rpF" type="file" accept="image/*"></label><button class="btn" id="rpB">Enviar reporte</button><p class="para">Tu nombre no se muestra a los demás vecinos; solo el comité sabe quién reportó.</p></form></details>`:'<p class="note">Para hacer reportes necesitas tu link personal, que te manda el comité cuando quedas validado. Aquí puedes ver los que ya están.</p>'}
+  <div class="chips" id="rpCh"></div><div id="rpL2">Cargando…</div>`;
+  let est='Todos',L=[],geo=null;
+  const draw=()=>{$('rpCh').innerHTML=['Todos','Recibido','En atención','Resuelto'].map(c=>`<button type="button" class="${c===est?'on':''}" data-e="${c}">${c}</button>`).join('');$('rpL2').innerHTML=dibReportes(L.filter(r=>est==='Todos'||r.estado===est))};
+  const load=async()=>{const {data,error}=await SB.from('reportes').select('*').eq('fracc_id',FR.id).order('created_at',{ascending:false}).limit(100);if(error)throw error;L=data;draw()};
+  $('rpCh').onclick=e=>{if(e.target.dataset.e){est=e.target.dataset.e;draw()}};
+  if(YO){$('rpG').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');$('rpGM').textContent='Buscando…';navigator.geolocation.getCurrentPosition(p=>{geo=[p.coords.latitude,p.coords.longitude];$('rpGM').textContent='Ubicación lista ✓'},()=>{$('rpGM').textContent='No se pudo.'},{enableHighAccuracy:true,timeout:15000})};
+   $('fRp').onsubmit=async e=>{e.preventDefault();$('rpB').disabled=true;try{const id=await rpc('reportar',{p_token:TOKEN,p:{cat:$('rpC').value,titulo:$('rpT').value,texto:$('rpX').value,lugar:$('rpL').value,lat:geo?geo[0]:'',lng:geo?geo[1]:''}});
+    const f=$('rpF').files[0];if(f){const b=await comprimir(f,1400);const {error}=await SB.storage.from('reportes').upload(`${FR.id}/${id}.jpg`,b,{contentType:'image/jpeg'});if(!error)await rpc('marcar_foto_reporte',{p_id:id})}
+    e.target.reset();geo=null;$('rpGM').textContent='';toast('¡Reporte enviado! El comité le dará seguimiento.');load()}catch(x){err(x)}finally{$('rpB').disabled=false}}}
+  load().catch(err);
+ },
+ async emerg(){app.innerHTML=`<h2>Teléfonos de emergencia</h2><p class="lead">Toca un número para llamar. Si tu celular no marca, el número también está escrito.</p><div id="tL">Cargando…</div>`;$('tL').innerHTML=await dibTels(FR)},
+ reglas(){app.innerHTML=REGLAS(FR)},
+ async repres(){
+  app.innerHTML=`<h2>¿Quién te representa?</h2><p class="lead">Tus representantes según la sección electoral de ${esc(FR.nombre)}. Es información pública; aparecen todos los cargos sin importar el partido.</p><div id="rL">Cargando…</div>`;
+  $('rL').innerHTML=await dibRepres(FR);
+ },
+ visitas(){
+  app.innerHTML=`<h2>Solicitar una visita</h2><p class="note">Para candidatos, diputados y funcionarios de cualquier partido. La misma regla para todos: el comité revisa la solicitud y, si la aprueba, sale como aviso a los vecinos. Solo verás cuántos confirmaron, nunca nombres ni teléfonos.</p>
+  <form id="fVi"><div class="row"><label>Nombre<input id="vN" required minlength="3" maxlength="120"></label><label>Cargo o partido<input id="vC" required maxlength="120"></label></div>
+  <div class="row"><label>Fecha propuesta<input id="vF" required maxlength="60"></label><label>Lugar<input id="vL" required maxlength="120"></label></div>
+  <label>Teléfono de contacto<input id="vT" inputmode="tel" maxlength="60"></label><label>Tema<textarea id="vTm" required maxlength="600"></textarea></label>
+  <button class="btn">Enviar solicitud</button><p class="para">Al enviarla te damos un link para ver si fue aprobada y cuántos vecinos confirmaron.</p><p class="msg" id="vMsg"></p></form>`;
+  $('fVi').onsubmit=async e=>{e.preventDefault();try{const t=await rpc('solicitar_visita',{p:{fracc:FR.id,nombre:$('vN').value,cargo:$('vC').value,contacto:$('vT').value,fecha:$('vF').value,lugar:$('vL').value,tema:$('vTm').value}});
+   const link=`${BASE}?v=${t}`;e.target.reset();$('vMsg').className='msg ok';$('vMsg').innerHTML=`Solicitud enviada. Guarda este link para ver el estado:<br><a href="${link}">${esc(link)}</a>`}catch(x){err(x)}};
+ }
+};
+
+async function vistaCandidato(t){
+ setTabs([]);let d=null;try{d=await rpc('ver_visita',{p_token:t})}catch(e){}
+ if(!d){app.innerHTML='<p class="warn">Este link no es válido.</p>';return}
+ $('hTit').textContent='Solicitud de visita';
+ app.innerHTML=`<div class="card"><div class="top"><span class="tag ${d.estado==='Aprobada'?'v':d.estado==='Rechazada'?'r':'p'}">${esc(d.estado)}</span><span class="meta">${esc(d.fracc)}</span></div><h3>${esc(d.nombre)}</h3><p class="meta">${esc(d.fecha)} · ${esc(d.lugar)}</p>${d.estado==='Aprobada'?`<div class="stat" style="margin-top:12px"><b>${d.confirmados}</b><span>vecinos confirmaron que van</span></div>`:''}<p class="para">Por privacidad, solo se muestra el número de confirmados.</p></div>`;
+}
+
+/* ---------- COMITÉ ---------- */
+function vistaLogin(){
+ setTabs([]);$('hTit').textContent='Entrar como comité';$('hSub').textContent='Solo validadores y administrador.';
+ app.innerHTML=`<form id="fLog" style="max-width:420px"><label>Correo<input id="lE" type="email" required autocomplete="username"></label><label>Contraseña<input id="lP" type="password" required autocomplete="current-password"></label><button class="btn">Entrar</button><p class="para">Si no tienes cuenta, pídela al administrador. Los vecinos no necesitan cuenta: se inscriben desde el link de su fraccionamiento.</p><p class="msg err" id="lM"></p></form>`;
+ $('fLog').onsubmit=async e=>{e.preventDefault();$('lM').textContent='';const {error}=await SB.auth.signInWithPassword({email:$('lE').value.trim(),password:$('lP').value});if(error){$('lM').textContent='Correo o contraseña incorrectos.';return}entrarStaff()};
+}
+async function entrarStaff(){
+ const {data:{user}}=await SB.auth.getUser();if(!user)return vistaLogin();
+ const {data:p}=await SB.from('perfiles').select('*').eq('id',user.id).maybeSingle();
+ if(!p){await SB.auth.signOut();app.innerHTML=`<p class="warn">${NOAUT}</p>`;return}
+ staff=p;
+ if(p.debe_cambiar_clave)return cambiarClave(true);
+ FR=FRS.find(f=>f.id===(Q.get('f')||p.fracc_id))||FRS[0];
+ if(p.rol!=='admin'){FR=FRS.find(f=>f.id===p.fracc_id);if(!FR){app.innerHTML=`<p class="warn">Tu cuenta no tiene fraccionamiento asignado. Pídeselo al administrador.</p>`;return}}
+ $('hTit').textContent='Comité · '+FR.nombre;$('hSub').innerHTML=p.rol==='admin'?`Administrador general · <label style="display:inline-flex;font-weight:400;color:#fff">Fraccionamiento: <select id="frSel" style="width:auto;min-height:36px;padding:4px 8px;margin-left:6px">${FRS.map(f=>`<option value="${f.id}"${f.id===FR.id?' selected':''}>${esc(f.nombre)}</option>`).join('')}</select></label>`:'Validador de '+esc(FR.nombre);
+ $('hUser').innerHTML=`${esc(p.nombre||p.email)} · <a href="#" id="salir">Salir</a> · <a href="#" id="cClave">Cambiar contraseña</a>`;
+ $('salir').onclick=async e=>{e.preventDefault();await SB.auth.signOut();location.href=BASE};
+ $('cClave').onclick=e=>{e.preventDefault();cambiarClave(false)};
+ if($('frSel'))$('frSel').onchange=e=>{FR=FRS.find(f=>f.id===e.target.value);mapSel=null;$('hTit').textContent='Comité · '+FR.nombre;route()};
+ const t=[['padron','Padrón'],['mapa','Mapa y casas'],['consultas','Consultas'],['reportes','Reportes'],['avisos','Avisos'],['visitas','Visitas'],['apoyos','Apoyos'],['cumple','Cumpleaños'],['calles','Datos y links'],['reglas','Reglas']];
+ if(p.rol==='admin')t.push(['admin','Administración']);
+ setTabs(t);ROUTES={};t.forEach(([k])=>ROUTES[k]=ST[k]);
+ if(!ROUTES[location.hash.slice(1)])location.hash='#padron';else route();
+}
+function cambiarClave(obligado){
+ app.innerHTML=`<form id="fCl" style="max-width:420px"><h2>${obligado?'Pon tu contraseña nueva':'Cambiar contraseña'}</h2><p class="lead">${obligado?'Es tu primera vez: cambia la contraseña temporal por una tuya.':''} Mínimo 8 caracteres.</p><label>Contraseña nueva<input id="c1" type="password" minlength="8" required autocomplete="new-password"></label><label>Repítela<input id="c2" type="password" minlength="8" required autocomplete="new-password"></label><button class="btn">Guardar</button><p class="msg err" id="cM"></p></form>`;
+ $('fCl').onsubmit=async e=>{e.preventDefault();if($('c1').value!==$('c2').value){$('cM').textContent='No coinciden.';return}
+  const {error}=await SB.auth.updateUser({password:$('c1').value});if(error){$('cM').textContent=error.message;return}await rpc('clave_cambiada');staff.debe_cambiar_clave=false;toast('Contraseña guardada.');entrarStaff()};
+}
+async function vecinosFR(){const {data,error}=await SB.from('vecinos').select('*, emergencias(*)').eq('fracc_id',FR.id).neq('estado','Baja').order('calle').order('numero');if(error)throw error;return data}
+async function verINE(v){try{if(!(await rpc('log_ine',{p_vecino:v.id})))return toast(NOAUT);const {data,error}=await SB.storage.from('ine').createSignedUrl(v.ine_path,60);if(error)throw error;$('ineImg').src=data.signedUrl;$('ineBox').style.display='grid'}catch(x){err(x)}}
+$('ineCerrar').onclick=()=>{$('ineBox').style.display='none';$('ineImg').src=''};
+const linkPersonal=v=>`${BASE}?f=${v.fracc_id}&t=${v.token}`;
+const waLink=(tel,txt)=>`https://wa.me/${telMX(tel)}?text=${encodeURIComponent(txt)}`;
+function emTxt(e){if(!e)return'';const x=[e.sangre&&'Sangre '+e.sangre,e.alergias&&'Alergia: '+e.alergias,e.salud,e.contacto&&'Avisar a '+e.contacto].filter(Boolean);return x.length?`<small style="color:var(--no)">Emergencia: ${x.map(esc).join(' · ')}</small>`:''}
+function filaVecino(v){
+ const tel=v.rep_tel||v.tel,msg=`Hola ${v.nombre.split(' ')[0]}, ya quedaste validado en el padrón de ${FR.nombre}. Este es tu link personal para votar y confirmar asistencia (no lo compartas): ${linkPersonal(v)}`;
+ return `<div class="per"><p><b>${esc(v.nombre)}</b><small>${esc(v.tipo||'')} · ${esc(v.tel)}${v.rep_nombre?' · Representante: '+esc(v.rep_nombre)+' '+esc(v.rep_tel||''):''}</small>
+ <small>${v.ine_path?'INE guardada (cerrada)':v.ine_borrada?'INE borrada a petición':'Sin foto de INE'}${v.validado_en?' · Validado el '+new Date(v.validado_en).toLocaleDateString('es-MX'):''}</small>${emTxt(v.emergencias)}</p>
+ <span class="acts">${v.estado==='Validado'?'<span class="tag v">Validado</span>':`<button class="btn sm" data-a="val" data-id="${v.id}">Validar</button>`}
+ ${v.ine_path?`<button class="btn sm alt" data-a="ver" data-id="${v.id}">Ver INE</button><button class="btn sm ghost" data-a="borrar" data-id="${v.id}">Borrar INE</button>`:''}
+ ${v.estado==='Validado'?`<a class="btn sm alt" href="${waLink(tel,msg)}">Mandar su link</a>`:''}
+ <button class="btn sm ghost" data-a="baja" data-id="${v.id}">Dar de baja</button></span></div>`;
+}
+async function accionVecino(a,id,L,after){
+ const v=L.find(x=>x.id===id);if(!v)return;
+ try{
+  if(a==='ver')return verINE(v);
+  if(a==='val'){const {error}=await SB.from('vecinos').update({estado:'Validado',validado_por:staff.id,validado_en:new Date().toISOString()}).eq('id',id);if(error)throw error;toast('Validado. Ahora mándale su link por WhatsApp.')}
+  if(a==='borrar'){if(!await confirmar(`¿Borrar la foto de la INE de ${v.nombre}? Hazlo solo si el vecino lo pidió. Queda su constancia de validación.`))return;
+   const {error:e1}=await SB.storage.from('ine').remove([v.ine_path]);if(e1)throw e1;const {error}=await SB.from('vecinos').update({ine_path:null,ine_borrada:true}).eq('id',id);if(error)throw error;toast('INE borrada.')}
+  if(a==='baja'){if(!await confirmar(`¿Dar de baja a ${v.nombre}? Ya no podrá votar ni aparecerá en el padrón.`))return;
+   if(v.ine_path)await SB.storage.from('ine').remove([v.ine_path]);const {error}=await SB.from('vecinos').update({estado:'Baja',ine_path:null}).eq('id',id);if(error)throw error;await SB.from('emergencias').delete().eq('vecino_id',id);toast('Dado de baja.')}
+  after();
+ }catch(x){err(x)}
+}
+function confirmar(t){return new Promise(r=>{const d=document.createElement('div');d.id='ineBox';d.style.display='grid';d.innerHTML=`<div class="card" style="max-width:420px;color:var(--ink)"><p>${esc(t)}</p><div class="vote"><button class="btn" id="sY">Sí</button><button class="btn ghost" id="sN">Cancelar</button></div></div>`;document.body.append(d);d.querySelector('#sY').onclick=()=>{d.remove();r(true)};d.querySelector('#sN').onclick=()=>{d.remove();r(false)}})}
+
+const ST={
+ async padron(){
+  app.innerHTML=`<h2>Padrón de ${esc(FR.nombre)}</h2><p class="lead">Solo lo ve el comité. Validar: confirmas con la INE que la persona vive ahí. Borrar INE: solo si el vecino lo pide. Mandar su link: le llega por WhatsApp su link personal para votar.</p>
+  <div class="stats" id="pS"></div><div class="tools"><input id="pB" placeholder="Buscar nombre o número" aria-label="Buscar"><select id="pE" aria-label="Estado"><option value="">Todos</option><option>Pendiente</option><option>Validado</option></select></div><div id="pL">Cargando…</div>
+  <button class="btn ghost" id="pCp">Copiar lista para Excel</button><p class="para">Copia el padrón (sin INE ni datos de salud) para pegarlo en Excel.</p>`;
+  let L=[];const draw=()=>{const q=$('pB').value.toLowerCase(),e=$('pE').value,c=new Set(L.map(v=>v.calle+' '+v.numero));
+   $('pS').innerHTML=`<div class="stat"><b>${c.size}</b><span>casas</span></div><div class="stat"><b>${L.length}</b><span>vecinos</span></div><div class="stat"><b>${L.filter(v=>v.estado==='Validado').length}</b><span>validados</span></div>`;
+   const g={};L.filter(v=>(!e||v.estado===e)&&(!q||(v.nombre+' '+v.numero).toLowerCase().includes(q))).forEach(v=>(g[v.calle+' '+v.numero]??=[]).push(v));
+   $('pL').innerHTML=Object.keys(g).map(k=>`<div class="casa"><h3>${esc(k)}<span>${g[k].length} ${g[k].length>1?'personas':'persona'}</span></h3>${g[k].map(filaVecino).join('')}</div>`).join('')||'<p class="lead">Todavía no hay inscripciones. Comparte el link de inscripción desde "Calles y links".</p>'};
+  const load=async()=>{L=await vecinosFR();draw()};
+  $('pB').oninput=draw;$('pE').onchange=draw;
+  $('pL').onclick=e=>{const b=e.target.closest('[data-a]');if(b)accionVecino(b.dataset.a,b.dataset.id,L,load)};
+  $('pCp').onclick=async()=>{const t=['Calle\tNúmero\tNombre\tWhatsApp\tTipo\tEstado\tRepresentante',...L.map(v=>[v.calle,v.numero,v.nombre,v.tel,v.tipo,v.estado,v.rep_nombre||''].join('\t'))].join('\n');try{await navigator.clipboard.writeText(t);toast('Lista copiada.')}catch(x){toast('No se pudo copiar en este navegador.')}};
+  load().catch(err);
+ },
+ async mapa(){
+  app.innerHTML=`<h2>Mapa de ${esc(FR.nombre)}</h2><p class="lead">Cada punto es una casa con ubicación guardada: verde validada, naranja pendiente, gris sin inscritos. Toca un punto o una casa de la lista para ver quién vive ahí, su foto, datos de emergencia y notas.</p>
+  <div id="lmap" style="height:min(60vh,420px);border-radius:14px;border:1.5px solid var(--line);z-index:0"></div><p class="para" id="mHint">Mapa de OpenStreetMap.</p>
+  <div id="mI"></div>
+  <h3 style="margin:18px 0 8px">Casas</h3><div class="tools"><input id="mB" placeholder="Buscar (ej. Granizo 70)" aria-label="Buscar casa"></div>
+  <details style="margin:0 0 12px"><summary>Agregar una casa</summary><form id="fCa"><div class="row2"><label>Calle<select id="caC">${(FR.calles||[]).map(c=>`<option>${esc(c.n)}</option>`).join('')}</select></label><label>Número<input id="caN" required maxlength="12"></label></div><button class="btn sm">Agregar</button><p class="para">Para poner la foto y la ubicación de una casa aunque todavía nadie se inscriba.</p></form></details>
+  <div id="mL">Cargando…</div>`;
+  let V=[],N=[],C=[],marcar=null,capa=LF.layerGroup();
+  const map=LF.map('lmap').setView(FR.lat?[FR.lat,FR.lng]:CAMPECHE,FR.lat?17:14);
+  LF.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);capa.addTo(map);
+  const casas=()=>{const m={};C.forEach(c=>m[c.casa]={...c});V.forEach(v=>{const k=v.calle+' '+v.numero;m[k]??={casa:k,calle:v.calle,numero:v.numero}});
+   return Object.values(m).map(c=>{const ps=V.filter(v=>v.calle+' '+v.numero===c.casa);c.ps=ps;c.st=!ps.length?0:ps.every(v=>v.estado==='Validado')?2:1;return c}).sort((a,b)=>a.calle.localeCompare(b.calle)||(parseInt(a.numero)||0)-(parseInt(b.numero)||0))};
+  const COLS=['#8a8d99','#f08a4b','#1d9a5a'],ST_T=['Sin inscritos','Pendiente','Validada'],ST_C=['g','p','v'];
+  const draw=()=>{const cs=casas(),q=$('mB').value.toLowerCase();capa.clearLayers();
+   cs.filter(c=>c.lat).forEach(c=>LF.circleMarker([c.lat,c.lng],{radius:mapSel===c.casa?12:9,color:'#fff',weight:2,fillColor:COLS[c.st],fillOpacity:1}).bindTooltip(c.casa).on('click',()=>{mapSel=c.casa;draw()}).addTo(capa));
+   $('mL').innerHTML=cs.filter(c=>!q||c.casa.toLowerCase().includes(q)).map(c=>`<button class="per card" style="width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;margin-bottom:6px${mapSel===c.casa?';border-color:var(--sun)':''}" data-k="${esc(c.casa)}"><p><b>${esc(c.casa)}</b><small>${c.ps.length} inscritos${c.lat?'':' · sin ubicación'}${c.foto_path?'':' · sin foto'}</small></p><span class="tag ${ST_C[c.st]}">${ST_T[c.st]}</span></button>`).join('')||'<p class="lead">Todavía no hay casas.</p>';
+   info(cs.find(c=>c.casa===mapSel))};
+  const info=async c=>{if(!c){$('mI').innerHTML='';return}const ns=N.filter(x=>x.casa===c.casa);
+   $('mI').innerHTML=`<div class="card" style="margin-top:12px"><div class="top"><h3>${esc(c.casa)}</h3><span class="tag ${ST_C[c.st]}">${ST_T[c.st]}</span></div>
+   <div id="mFoto" class="ph" style="aspect-ratio:16/10;margin:8px 0;border-style:${c.foto_path?'solid':'dashed'}">${c.foto_path?'Cargando foto…':'Sin foto de la fachada'}</div>
+   <div class="vote"><label class="btn sm alt" style="display:inline-flex;cursor:pointer">${c.foto_path?'Cambiar foto':'Subir foto de la fachada'}<input type="file" accept="image/*" id="mF" class="hide"></label>
+   <button class="btn sm alt" id="mGeo">Estoy frente a la casa: guardar ubicación</button><button class="btn sm ghost" id="mTap">Marcar tocando el mapa</button></div>
+   <p class="para">Toma tú la foto desde la calle, con permiso del dueño. No uses capturas de Google Maps. Solo la ve el comité.</p>
+   <h3 style="margin-top:14px">Quién vive aquí</h3>${c.ps.map(filaVecino).join('')||'<p class="meta">Nadie inscrito todavía.</p>'}
+   <h3 style="margin-top:14px">Notas del comité</h3><p class="para">Escríbelas con respeto y con permiso de la familia. Toca el estado para cambiarlo.</p>${ns.map(x=>`<div class="per" style="padding-inline:0"><p>${esc(x.texto)}<small>${new Date(x.created_at).toLocaleDateString('es-MX')}</small></p><span class="acts"><button class="tag ${x.estado==='Concluido'?'v':'p'}" style="border:0;cursor:pointer;min-height:34px" data-n="${x.id}">${x.estado}</button><button class="btn sm ghost" data-nd="${x.id}">Borrar</button></span></div>`).join('')||'<p class="meta">Sin notas.</p>'}
+   <form id="fN" style="margin-top:10px"><label>Nueva nota<input id="nT" required maxlength="500" placeholder="Requiere apoyo / trámite pendiente…"></label><button class="btn sm">Agregar nota</button></form></div>`;
+   const guarda=async(o)=>{const {error}=await SB.from('casas').upsert({fracc_id:FR.id,casa:c.casa,calle:c.calle,numero:c.numero,...o});if(error)throw error};
+   $('fN').onsubmit=async e=>{e.preventDefault();const {error}=await SB.from('notas').insert({fracc_id:FR.id,casa:c.casa,texto:$('nT').value.trim()});if(error)return err(error);load()};
+   $('mGeo').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');toast('Buscando tu ubicación…');navigator.geolocation.getCurrentPosition(async p=>{try{await guarda({lat:p.coords.latitude,lng:p.coords.longitude});toast('Ubicación guardada.');map.setView([p.coords.latitude,p.coords.longitude],18);load()}catch(x){err(x)}},()=>toast('No se pudo. Activa la ubicación del celular.'),{enableHighAccuracy:true,timeout:15000})};
+   $('mTap').onclick=()=>{marcar=async ll=>{try{await guarda({lat:ll.lat,lng:ll.lng});toast('Ubicación guardada.');load()}catch(x){err(x)}};$('mHint').textContent='Ahora toca en el mapa el lugar exacto de '+c.casa+'.';$('lmap').scrollIntoView({behavior:'smooth'})};
+   $('mF').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{toast('Subiendo foto…');const b=await comprimir(f,1400),ruta=`${FR.id}/${c.casa.normalize('NFD').replace(/[^\w]+/g,'-').toLowerCase()}-${Date.now()}.jpg`;
+    const {error}=await SB.storage.from('casas').upload(ruta,b,{contentType:'image/jpeg'});if(error)throw error;if(c.foto_path)await SB.storage.from('casas').remove([c.foto_path]);await guarda({foto_path:ruta});toast('Foto guardada.');load()}catch(x){err(x)}};
+   if(c.foto_path){const {data}=await SB.storage.from('casas').createSignedUrl(c.foto_path,300);if(data&&$('mFoto'))$('mFoto').innerHTML=`<img src="${data.signedUrl}" alt="Fachada de ${esc(c.casa)}">`}
+  };
+  map.on('click',e=>{if(!marcar)return;const f=marcar;marcar=null;$('mHint').textContent='Mapa de OpenStreetMap.';f(e.latlng)});
+  const load=async()=>{V=await vecinosFR();const n=await SB.from('notas').select('*').eq('fracc_id',FR.id).order('created_at');if(n.error)throw n.error;N=n.data;const c=await SB.from('casas').select('*').eq('fracc_id',FR.id);if(c.error)throw c.error;C=c.data;draw()};
+  $('mB').oninput=draw;
+  $('mL').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;mapSel=b.dataset.k;const c=C.find(x=>x.casa===mapSel);if(c&&c.lat)map.setView([c.lat,c.lng],18);draw();$('mI').scrollIntoView({behavior:'smooth'})};
+  $('mI').onclick=async e=>{const b=e.target.closest('[data-a]');if(b)return accionVecino(b.dataset.a,b.dataset.id,V,load);
+   const n=e.target.dataset.n,nd=e.target.dataset.nd;if(n){const x=N.find(y=>y.id==n);const {error}=await SB.from('notas').update({estado:x.estado==='Pendiente'?'Concluido':'Pendiente'}).eq('id',n);if(error)return err(error);load()}
+   if(nd&&await confirmar('¿Borrar esta nota?')){const {error}=await SB.from('notas').delete().eq('id',nd);if(error)return err(error);load()}};
+  $('fCa').onsubmit=async e=>{e.preventDefault();const calle=$('caC').value,num=$('caN').value.trim(),casa=calle+' '+num;const {error}=await SB.from('casas').upsert({fracc_id:FR.id,casa,calle,numero:num});if(error)return err(error);mapSel=casa;e.target.reset();load()};
+  load().catch(err);
+ },
+ async consultas(){
+  app.innerHTML=`<h2>Consultas y votaciones</h2><p class="note">Por persona: vota cada adulto validado. Por casa: un voto por domicilio (cuotas, obras, portón). Los vecinos votan desde su link personal.</p><div id="cL">Cargando…</div>
+  <details><summary>Nueva consulta</summary><form id="fC"><label>Pregunta<textarea id="cQ" required minlength="5" maxlength="500" placeholder="¿Estás de acuerdo en…?"></textarea></label><label>Tipo de voto<select id="cT"><option value="persona">Por persona (cada adulto)</option><option value="casa">Por casa (un voto por domicilio)</option></select></label><button class="btn">Publicar consulta</button><p class="para">Les aparece a los vecinos validados en su link personal.</p></form></details>`;
+  const load=async()=>{const {data:C,error}=await SB.from('consultas').select('*, votos(opcion)').eq('fracc_id',FR.id).order('created_at',{ascending:false});if(error)throw error;
+   $('cL').innerHTML=C.map(c=>{const n=k=>c.votos.filter(v=>v.opcion===k).length,tot=c.votos.length;return `<div class="card"><div class="top"><span class="tag ${c.tipo==='casa'?'p':'v'}">${c.tipo==='casa'?'Voto por casa':'Voto por persona'}</span><span class="meta">${tot} votos</span></div><h3>${esc(c.pregunta)}</h3>
+   <div class="res">${Object.keys(LAB).map(k=>{const pc=tot?Math.round(n(k)*100/tot):0;return `<div><span>${LAB[k]}</span><i><b style="width:${pc}%;background:${COL[k]}"></b></i><em>${n(k)}</em></div>`}).join('')}</div>
+   <button class="btn sm ${c.abierta?'ghost':'alt'}" data-c="${c.id}" data-ab="${c.abierta}">${c.abierta?'Cerrar votación':'Volver a abrir'}</button></div>`}).join('')||'<p class="lead">Todavía no hay consultas.</p>'};
+  $('cL').onclick=async e=>{const id=e.target.dataset.c;if(!id)return;const {error}=await SB.from('consultas').update({abierta:e.target.dataset.ab!=='true'}).eq('id',id);if(error)return err(error);load()};
+  $('fC').onsubmit=async e=>{e.preventDefault();const {error}=await SB.from('consultas').insert({fracc_id:FR.id,pregunta:$('cQ').value.trim(),tipo:$('cT').value});if(error)return err(error);e.target.reset();toast('Consulta publicada.');load()};
+  load().catch(err);
+ },
+ async reportes(){
+  app.innerHTML=`<h2>Reportes de los vecinos</h2><p class="lead">Cambia el estado según avance: Recibido, En atención o Resuelto. La respuesta la ven todos los vecinos.</p><div class="chips" id="rpCh"></div><div id="rpL2">Cargando…</div>`;
+  let est='Recibido',L=[],V=[];
+  const draw=()=>{$('rpCh').innerHTML=['Recibido','En atención','Resuelto','Todos'].map(c=>`<button type="button" class="${c===est?'on':''}" data-e="${c}">${c} ${c==='Todos'?'':'('+L.filter(r=>r.estado===c).length+')'}</button>`).join('');
+   $('rpL2').innerHTML=dibReportes(L.filter(r=>est==='Todos'||r.estado===est),r=>{const v=V.find(x=>x.id===r.vecino_id);return `${v?`<p class="para">Reportó: ${esc(v.nombre)} · ${esc(v.calle+' '+v.numero)} · ${esc(v.tel)}</p>`:''}<div class="vote"><select data-r="${r.id}" style="flex:1 1 150px;width:auto" aria-label="Estado">${['Recibido','En atención','Resuelto'].map(x=>`<option${x===r.estado?' selected':''}>${x}</option>`).join('')}</select><input data-rr="${r.id}" value="${esc(r.respuesta||'')}" maxlength="500" placeholder="Respuesta para los vecinos" style="flex:2 1 200px;width:auto"><button class="btn sm" data-g="${r.id}">Guardar</button><button class="btn sm ghost" data-x="${r.id}">Borrar</button></div>`})};
+  const load=async()=>{const {data,error}=await SB.from('reportes').select('*').eq('fracc_id',FR.id).order('created_at',{ascending:false});if(error)throw error;L=data;V=await vecinosFR();draw()};
+  $('rpCh').onclick=e=>{if(e.target.dataset.e){est=e.target.dataset.e;draw()}};
+  $('rpL2').onclick=async e=>{const g=e.target.dataset.g,x=e.target.dataset.x;
+   if(g){const {error}=await SB.from('reportes').update({estado:$('rpL2').querySelector(`[data-r="${g}"]`).value,respuesta:$('rpL2').querySelector(`[data-rr="${g}"]`).value.trim()||null,updated_at:new Date().toISOString()}).eq('id',g);if(error)return err(error);toast('Guardado.');load()}
+   if(x&&await confirmar('¿Borrar este reporte? Hazlo solo si es falso u ofensivo.')){const r=L.find(y=>y.id==x);if(r.foto_path)await SB.storage.from('reportes').remove([r.foto_path]);const {error}=await SB.from('reportes').delete().eq('id',x);if(error)return err(error);load()}};
+  load().catch(err);
+ },
+ reglas(){app.innerHTML=REGLAS(FR)},
+ async avisos(){
+  app.innerHTML=`<h2>Avisos</h2><p class="lead">El comité puede publicar en cualquier categoría y borrar avisos que no sean apropiados.</p><div id="aL">Cargando…</div>
+  <details><summary>Publicar aviso</summary><form id="fA"><label>Categoría<select id="aC">${CATS.filter(c=>c!=='Político').map(c=>`<option>${c}</option>`).join('')}</select></label><label>Título<input id="aT" required minlength="3" maxlength="120"></label><label>Detalle<textarea id="aX" maxlength="1000"></textarea></label><div class="row"><label>Fecha<input id="aF" maxlength="60"></label><label>Lugar<input id="aLu" maxlength="120"></label></div><button class="btn">Publicar</button><p class="para">Para avisos de fallecimiento, publica solo con permiso de la familia.</p></form></details>`;
+  const load=async()=>{const L=await rpc('avisos_publicos',{p_fracc:FR.id,p_token:null});$('aL').innerHTML=L.map(a=>`<div class="card"><div class="top"><span class="cat">${esc(a.cat)}</span><span class="meta">${a.asis} confirmaron</span></div><h3>${esc(a.titulo)}</h3>${a.texto?`<p>${esc(a.texto)}</p>`:''}<p class="meta">${esc(a.fecha||'')}${a.lugar?' · '+esc(a.lugar):''}</p><button class="btn sm ghost" data-d="${a.id}">Borrar</button></div>`).join('')||'<p class="lead">No hay avisos.</p>'};
+  $('aL').onclick=async e=>{const id=e.target.dataset.d;if(!id||!await confirmar('¿Borrar este aviso?'))return;const {error}=await SB.from('avisos').delete().eq('id',id);if(error)return err(error);load()};
+  $('fA').onsubmit=async e=>{e.preventDefault();const {error}=await SB.from('avisos').insert({fracc_id:FR.id,cat:$('aC').value,titulo:$('aT').value.trim(),texto:$('aX').value.trim()||null,fecha_txt:$('aF').value.trim()||null,lugar:$('aLu').value.trim()||null,autor:staff.id});if(error)return err(error);e.target.reset();toast('Aviso publicado.');load()};
+  load().catch(err);
+ },
+ async visitas(){
+  app.innerHTML=`<h2>Visitas de candidatos</h2><p class="note">La misma regla para todos los partidos. Al aprobar, sale como aviso "Político" y el candidato solo ve cuántos confirmaron.</p><div id="vL">Cargando…</div>`;
+  const load=async()=>{const {data,error}=await SB.from('visitas').select('*').eq('fracc_id',FR.id).order('created_at',{ascending:false});if(error)throw error;
+   $('vL').innerHTML=data.map(v=>`<div class="card"><div class="top"><span class="tag ${v.estado==='Aprobada'?'v':v.estado==='Rechazada'?'r':'p'}">${v.estado}</span><span class="meta">${esc(v.fecha_txt)} · ${esc(v.lugar)}</span></div><h3>${esc(v.nombre)}</h3><p class="meta">${esc(v.cargo)}${v.contacto?' · '+esc(v.contacto):''}</p><p>${esc(v.tema)}</p>${v.estado==='Por aprobar'?`<div class="vote"><button class="btn sm" data-v="${v.id}" data-ok="1">Aprobar</button><button class="btn sm ghost" data-v="${v.id}" data-ok="0">Rechazar</button></div>`:''}</div>`).join('')||'<p class="lead">No hay solicitudes. El link para que las envíen está en "Calles y links".</p>'};
+  $('vL').onclick=async e=>{const id=e.target.dataset.v;if(!id)return;try{const r=await rpc('aprobar_visita',{p_id:+id,p_aprobar:e.target.dataset.ok==='1'});if(r!=='ok')toast(r);load()}catch(x){err(x)}};
+  load().catch(err);
+ },
+ async apoyos(){
+  app.innerHTML=`<h2>Apoyos y donaciones</h2><p class="note">La cuenta va a nombre del comité. Cada movimiento lo ven los vecinos validados.</p><div id="dL">Cargando…</div>
+  <details><summary>Registrar movimiento</summary><form id="fD"><div class="row"><label>Movimiento<select id="dT"><option>Entrada</option><option>Entrega</option></select></label><label>Fecha<input id="dF" maxlength="40"></label></div><label>Concepto<input id="dC" required minlength="2" maxlength="200"></label><div class="row"><label>Monto en pesos<input id="dM" inputmode="decimal"></label><label>En especie<input id="dE" maxlength="200" placeholder="10 juguetes"></label></div><button class="btn">Registrar</button></form></details>`;
+  const load=async()=>{const {data,error}=await SB.from('apoyos').select('*').eq('fracc_id',FR.id).order('created_at',{ascending:false});if(error)throw error;$('dL').innerHTML=dibApoyos(data.map(a=>({...a,fecha:a.fecha_txt})))};
+  $('fD').onsubmit=async e=>{e.preventDefault();const {error}=await SB.from('apoyos').insert({fracc_id:FR.id,tipo:$('dT').value,fecha_txt:$('dF').value.trim()||null,concepto:$('dC').value.trim(),monto:parseFloat($('dM').value)||0,especie:$('dE').value.trim()||null});if(error)return err(error);e.target.reset();load()};
+  load().catch(err);
+ },
+ async cumple(){
+  app.innerHTML=`<h2>Cumpleaños</h2><p class="lead">Vecinos validados que cumplen años este mes y el que sigue. El botón abre WhatsApp con la felicitación escrita.</p><div id="kL">Cargando…</div>`;
+  try{const L=(await vecinosFR()).filter(v=>v.nac&&v.estado==='Validado'),m=new Date().getMonth()+1,m2=m%12+1;
+   const c=L.filter(v=>[m,m2].includes(+v.nac.slice(5,7))).sort((a,b)=>a.nac.slice(5).localeCompare(b.nac.slice(5)));
+   $('kL').innerHTML=c.map(v=>`<div class="per card" style="margin-bottom:8px"><p><b>${esc(v.nombre)}</b><small>${new Date(v.nac+'T12:00').toLocaleDateString('es-MX',{day:'numeric',month:'long'})} · ${esc(v.calle+' '+v.numero)}</small></p><a class="btn sm alt" href="${waLink(v.rep_tel||v.tel,`¡Feliz cumpleaños, ${v.nombre.split(' ')[0]}! Te desean tus vecinos de ${FR.nombre}.`)}">Felicitar por WhatsApp</a></div>`).join('')||'<p class="lead">Nadie cumple años en estas fechas.</p>'}catch(x){err(x)}
+ },
+ calles(){
+  const linkI=`${BASE}?f=${FR.id}`;
+  app.innerHTML=`<h2>Calles y links</h2>
+  <div class="card"><h3>Link para inscribirse</h3><p class="meta" style="overflow-wrap:anywhere">${esc(linkI)}</p><div class="vote"><button class="btn sm" id="cpI">Copiar link</button><a class="btn sm alt" href="https://wa.me/?text=${encodeURIComponent('Vecinos de '+FR.nombre+': estamos armando el padrón para formar el comité. Inscríbete aquí: '+linkI)}">Compartir por WhatsApp</a></div><p class="para">Este mismo link sirve a los candidatos para pedir visita (pestaña Visitas). Pide permiso a quien administre el grupo de WhatsApp antes de publicarlo.</p></div>
+  <div class="card"><h3>Calles del fraccionamiento</h3><p class="para">Escribe cada calle del fraccionamiento. Así salen en la lista de la inscripción.</p><div id="kc"></div><button class="btn sm alt" id="kAdd" style="margin-top:8px">Agregar calle</button> <button class="btn sm" id="kG" style="margin-top:8px">Guardar calles</button></div>
+  <div class="card"><h3>Sección y distritos</h3><p class="para">Vienen en la INE de los vecinos (sección) y en la página del INE o del IEEC (distritos).</p><div class="row"><label>Sección(es)<input id="kSe" value="${esc(FR.secciones||'')}" maxlength="40"></label><label>Distrito local<input id="kDl" value="${esc(FR.distrito_local||'')}" maxlength="10"></label></div><label>Distrito federal<input id="kDf" value="${esc(FR.distrito_federal||'')}" maxlength="10"></label><label>Dónde votan (casilla)<input id="kCa" value="${esc(FR.casilla||'')}" maxlength="200" placeholder="Escuela…, calle…"></label><label>Nota de la casilla<input id="kCn" value="${esc(FR.casilla_nota||'')}" maxlength="200" placeholder="Dato de la elección 2024; confirmar en ubicatucasilla.ine.mx"></label><button class="btn sm" id="kSG" style="margin-top:8px">Guardar</button></div>
+  <div class="card"><h3>Representantes</h3><p class="para">Diputados, presidente municipal, regidores o quien corresponda. Pon solo teléfonos y correos de oficina, nunca personales. Los vecinos los ven en "Quién te representa".</p><div id="kR">Cargando…</div>
+   <details><summary>Agregar representante</summary><form id="fR"><div class="row"><label>Cargo<input id="rC" required maxlength="80" placeholder="Diputado local"></label><label>Nombre<input id="rN" required maxlength="120"></label></div><div class="row"><label>Partido<input id="rP" maxlength="60"></label><label>Distrito<input id="rD" maxlength="120"></label></div><div class="row"><label>Teléfono de oficina<input id="rT" maxlength="40"></label><label>Correo de oficina<input id="rE" maxlength="120"></label></div><label>Dirección de la oficina<input id="rO" maxlength="200"></label><label>Fuente (de dónde sacaste el dato)<input id="rF" maxlength="200" required></label><button class="btn sm">Agregar</button></form></details></div>
+  <div class="card"><h3>Teléfonos de emergencia</h3><p class="para">911, 089 y CFE 071 ya vienen. Agrega los de aquí: agua potable, Protección Civil, módulo de policía, etc.</p><div id="kT">Cargando…</div>
+   <details><summary>Agregar teléfono</summary><form id="fT"><div class="row"><label>Nombre<input id="tN" required maxlength="80" placeholder="SMAPAC (agua)"></label><label>Teléfono<input id="tT" required maxlength="40"></label></div><label>Nota<input id="tO" maxlength="150"></label><button class="btn sm">Agregar</button></form></details></div>
+  <div class="card"><h3>Centro del mapa</h3><p class="para">Párate en la entrada o en medio del fraccionamiento y toca el botón. El mapa del comité abrirá ahí.</p><button class="btn sm alt" id="kCen">Usar mi ubicación como centro</button> <span class="meta">${FR.lat?'Ya tiene centro guardado.':'Sin centro todavía.'}</span></div>`;
+  const loadT=async()=>{$('kT').innerHTML=await dibTels(FR,true)};loadT();
+  $('kT').onclick=async e=>{const id=e.target.dataset.td;if(!id||!await confirmar('¿Quitar este teléfono?'))return;const {error}=await SB.from('telefonos').delete().eq('id',id);if(error)return err(error);loadT()};
+  $('fT').onsubmit=async e=>{e.preventDefault();const {error}=await SB.from('telefonos').insert({fracc_id:FR.id,nombre:$('tN').value.trim(),telefono:$('tT').value.trim(),nota:$('tO').value.trim()||null});if(error)return err(error);e.target.reset();loadT()};
+  const loadR=async()=>{$('kR').innerHTML=await dibRepres(FR,true)};loadR();
+  $('kR').onclick=async e=>{const id=e.target.dataset.rd;if(!id||!await confirmar('¿Quitar a este representante?'))return;const {error}=await SB.from('representantes').delete().eq('id',id);if(error)return err(error);loadR()};
+  $('fR').onsubmit=async e=>{e.preventDefault();const v=i=>$(i).value.trim()||null;const {error}=await SB.from('representantes').insert({fracc_id:FR.id,cargo:v('rC'),nombre:v('rN'),partido:v('rP'),distrito:v('rD'),telefono:v('rT'),correo:v('rE'),oficina:v('rO'),fuente:v('rF'),orden:9});if(error)return err(error);e.target.reset();toast('Agregado.');loadR()};
+  $('kSG').onclick=async()=>{const o={secciones:$('kSe').value.trim()||null,distrito_local:$('kDl').value.trim()||null,distrito_federal:$('kDf').value.trim()||null,casilla:$('kCa').value.trim()||null,casilla_nota:$('kCn').value.trim()||null};const {data,error}=await SB.from('fraccionamientos').update(o).eq('id',FR.id).select();if(error||!data.length)return toast(NOAUT);Object.assign(FR,o);toast('Guardado.');loadR()};
+  $('kCen').onclick=()=>{if(!navigator.geolocation)return toast('Tu celular no permite ubicación.');navigator.geolocation.getCurrentPosition(async p=>{const {data,error}=await SB.from('fraccionamientos').update({lat:p.coords.latitude,lng:p.coords.longitude}).eq('id',FR.id).select();if(error||!data.length)return toast(NOAUT);FR.lat=p.coords.latitude;FR.lng=p.coords.longitude;toast('Centro guardado.');ST.calles()},()=>toast('No se pudo. Activa la ubicación del celular.'),{enableHighAccuracy:true,timeout:15000})};
+  let C=JSON.parse(JSON.stringify(FR.calles||[]));
+  const draw=()=>{$('kc').innerHTML=C.map((c,i)=>`<div style="display:flex;gap:6px;margin-top:8px"><input data-i="${i}" data-f="n" value="${esc(c.n)}" placeholder="Calle" aria-label="Calle"><button class="btn sm ghost" data-x="${i}">Quitar</button></div>`).join('')||'<p class="meta">Sin calles todavía.</p>'};
+  draw();
+  $('kc').oninput=e=>{const i=e.target.dataset.i;if(i==null)return;C[i].n=e.target.value};
+  $('kc').onclick=e=>{if(e.target.dataset.x!=null){C.splice(+e.target.dataset.x,1);draw()}};
+  $('kAdd').onclick=()=>{C.push({n:''});draw()};
+  $('kG').onclick=async()=>{C=C.filter(c=>c.n.trim()).map(c=>({n:c.n.trim()}));const {data,error}=await SB.from('fraccionamientos').update({calles:C}).eq('id',FR.id).select();if(error||!data.length)return toast(NOAUT);FR.calles=C;FRS=FRS.map(f=>f.id===FR.id?FR:f);toast('Calles guardadas.');draw()};
+  $('cpI').onclick=async()=>{try{await navigator.clipboard.writeText(linkI);toast('Link copiado.')}catch(x){toast('No se pudo copiar.')}};
+ },
+ async admin(){
+  if(staff.rol!=='admin'){app.innerHTML=`<p class="warn">${NOAUT}</p>`;return}
+  app.innerHTML=`<h2>Administración</h2>
+  <div class="card"><h3>Validadores</h3><p class="para">Cada validador solo ve el padrón de su fraccionamiento.</p><div id="vlL">Cargando…</div>
+   <details><summary>Dar de alta un validador</summary><form id="fV"><label>Nombre<input id="vaN" required maxlength="120"></label><label>Correo<input id="vaE" type="email" required></label><label>Fraccionamiento<select id="vaF">${FRS.map(f=>`<option value="${f.id}">${esc(f.nombre)}</option>`).join('')}</select></label><label>Contraseña temporal<input id="vaP" required minlength="8"><small>Mándasela por WhatsApp. Al entrar por primera vez el sistema le pide cambiarla.</small></label><button class="btn">Crear cuenta</button></form></details></div>
+  <div class="card"><h3>Nuevo fraccionamiento o colonia</h3><form id="fF"><div class="row"><label>Nombre<input id="fN" required maxlength="80" placeholder="Colonia Ejemplo"></label><label>Clave para el link<input id="fI" required pattern="[a-z0-9-]{3,40}" placeholder="colonia-ejemplo"><small>Solo minúsculas, números y guiones.</small></label></div><button class="btn">Crear</button></form></div>
+  <div class="card"><h3>Bitácora</h3><p class="para">Quién abrió INE y quién dio de alta o quitó validadores.</p><div id="bL">Cargando…</div></div>`;
+  const load=async()=>{
+   const {data:P}=await SB.from('perfiles').select('*').order('created_at');
+   $('vlL').innerHTML=P.map(p=>`<div class="per" style="padding-inline:0"><p><b>${esc(p.nombre||p.email)}</b><small>${esc(p.email)} · ${p.rol==='admin'?'Administrador general':'Validador de '+esc((FRS.find(f=>f.id===p.fracc_id)||{}).nombre||'—')}</small></p>${p.rol==='validador'?`<button class="btn sm ghost" data-q="${p.id}">Quitar</button>`:''}</div>`).join('');
+   const {data:B}=await SB.from('bitacora').select('*').order('created_at',{ascending:false}).limit(50);const nom=id=>(P.find(p=>p.id===id)||{}).nombre||'—';
+   $('bL').innerHTML=B.map(b=>`<div class="per" style="padding-inline:0"><p>${esc(nom(b.usuario))} · ${esc(b.accion)}${b.detalle?' · '+esc(b.detalle):''}<small>${new Date(b.created_at).toLocaleString('es-MX')}</small></p></div>`).join('')||'<p class="meta">Sin movimientos.</p>'};
+  $('vlL').onclick=async e=>{const id=e.target.dataset.q;if(!id||!await confirmar('¿Quitar a este validador? Ya no podrá entrar.'))return;try{const r=await rpc('quitar_validador',{p_id:id});if(r!=='ok')toast(r);load()}catch(x){err(x)}};
+  $('fV').onsubmit=async e=>{e.preventDefault();try{const r=await rpc('crear_validador',{p_email:$('vaE').value,p_nombre:$('vaN').value,p_fracc:$('vaF').value,p_clave:$('vaP').value});if(r!=='ok')return toast(r);toast('Cuenta creada. Mándale su correo y contraseña temporal.');e.target.reset();load()}catch(x){err(x)}};
+  $('fF').onsubmit=async e=>{e.preventDefault();const {error}=await SB.from('fraccionamientos').insert({id:$('fI').value.trim(),nombre:$('fN').value.trim()});if(error)return err(error);const {data}=await SB.from('fraccionamientos').select('*').order('nombre');FRS=data;toast('Fraccionamiento creado. Agrégale sus calles en "Calles y links".');entrarStaff()};
+  load().catch(err);
+ }
+};
+
+/* ---------- dibujos compartidos ---------- */
+const RCATS=['Alumbrado','Agua y drenaje','Basura y limpieza','Calles y banquetas','Seguridad','Parques y áreas verdes','Otro'];
+const fotoRep=p=>SB.storage.from('reportes').getPublicUrl(p).data.publicUrl;
+function dibReportes(L,extra){return L.map(r=>`<div class="card"><div class="top"><span class="cat">${esc(r.cat)}</span><span class="tag ${r.estado==='Resuelto'?'v':r.estado==='En atención'?'p':'g'}">${r.estado}</span></div><h3>${esc(r.titulo)}</h3>${r.texto?`<p>${esc(r.texto)}</p>`:''}
+ ${r.foto_path?`<img src="${fotoRep(r.foto_path)}" alt="Foto del reporte" loading="lazy" style="width:100%;max-height:260px;object-fit:cover;border-radius:10px;margin:6px 0">`:''}
+ <p class="meta">${esc(r.lugar||'')}${r.lugar?' · ':''}${new Date(r.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short'})}${r.lat?` · <a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}">Ver en el mapa</a>`:''}</p>
+ ${r.respuesta?`<p class="note" style="margin:6px 0 0"><b>Comité:</b> ${esc(r.respuesta)}</p>`:''}${extra?extra(r):''}</div>`).join('')||'<p class="lead">No hay reportes aquí.</p>'}
+async function dibTels(f,editable){const {data,error}=await SB.from('telefonos').select('*').eq('fracc_id',f.id).order('orden').order('id');if(error)return `<p class="warn">${esc(error.message)}</p>`;
+ return data.map(t=>`<div class="per card" style="margin-bottom:8px"><p><b>${esc(t.nombre)}</b>${t.nota?`<small>${esc(t.nota)}</small>`:''}</p><span class="acts"><a class="btn" href="tel:${esc(t.telefono.replace(/[^\d+]/g,''))}">${esc(t.telefono)}</a>${editable?`<button class="btn sm ghost" data-td="${t.id}">Quitar</button>`:''}</span></div>`).join('')}
+const REGLAS=f=>`<h2>Reglas de Vecinos en Red</h2><p class="lead">Las reglas de ${esc(f.nombre)}. El comité las puede ajustar en asamblea.</p>
+ <div class="card"><h3>Quién ve tus datos</h3><p>Solo el comité de tu fraccionamiento ve tu nombre, teléfono, INE y datos de emergencia. Nadie más: ni otros vecinos, ni candidatos, ni partidos. Tus datos no se usan para publicidad ni campañas. Puedes pedir que se borren cuando quieras.</p></div>
+ <div class="card"><h3>Cómo se vota</h3><p>Votan los adultos validados con su link personal y los últimos 4 caracteres de su clave de elector. Hay dos tipos: <b>por persona</b> (cada adulto cuenta) para opiniones y peticiones, y <b>por casa</b> (un voto por domicilio) para cuotas y obras. Una persona mayor puede votar por medio de su representante registrado.</p></div>
+ <div class="card"><h3>Qué se puede publicar</h3><p>Avisos de eventos, ventas de vecinos, servicios y noticias de la comunidad, con respeto. No se permiten insultos, chismes ni datos personales de otros. Los avisos de fallecimiento solo con permiso de la familia. El comité puede borrar lo que no cumpla.</p></div>
+ <div class="card"><h3>Visitas de candidatos</h3><p>Cualquier partido puede pedir una visita, con la misma regla para todos. El comité la aprueba y avisa a los vecinos. El candidato solo ve cuántos confirmaron, nunca nombres ni teléfonos.</p></div>
+ <div class="card"><h3>Reportes y apoyos</h3><p>Los reportes son para problemas del fraccionamiento, no para acusar a personas. Para algo urgente llama al 911. Las donaciones van a la cuenta del comité y cada movimiento se publica para que todos lo vean.</p></div>`;
+async function dibRepres(f,editable){
+ const {data,error}=await SB.from('representantes').select('*').eq('fracc_id',f.id).order('orden');if(error)return `<p class="warn">${esc(error.message)}</p>`;
+ return `<div class="stats"><div class="stat"><b>${esc(f.secciones||'—')}</b><span>sección electoral</span></div><div class="stat"><b>${esc(f.distrito_local||'—')}</b><span>distrito local</span></div><div class="stat"><b>${esc(f.distrito_federal||'—')}</b><span>distrito federal</span></div></div>`+
+ (f.casilla?`<div class="card"><span class="cat">Dónde votas</span><h3>${esc(f.casilla)}</h3>${f.casilla_nota?`<p class="para">${esc(f.casilla_nota)}</p>`:''}<a class="btn sm alt" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.casilla+', Campeche')}">Ver en el mapa</a></div>`:'')+
+ (data.map(r=>`<div class="card"><span class="cat">${esc(r.cargo)}</span><h3>${esc(r.nombre)}</h3><p class="meta">${esc(r.partido||'')}${r.distrito?' · '+esc(r.distrito):''}</p>
+  ${r.telefono?`<p>Teléfono: <a href="tel:${esc(r.telefono.replace(/[^\d+]/g,''))}">${esc(r.telefono)}</a></p>`:''}${r.correo?`<p>Correo: ${esc(r.correo)}</p>`:''}${r.oficina?`<p>Oficina: ${esc(r.oficina)}</p>`:''}
+  <p class="para">Fuente: ${esc(r.fuente||'—')} · Revisado el ${r.verificado?new Date(r.verificado+'T12:00').toLocaleDateString('es-MX'):'—'}</p>${editable?`<button class="btn sm ghost" data-rd="${r.id}">Quitar</button>`:''}</div>`).join('')||'<p class="lead">Todavía no se cargan representantes.</p>')+
+ `<p class="para">Puedes confirmar tu sección en tu INE y tu distrito en la página del INE o del IEEC. Si algún dato cambió, avísale al comité.</p>`;
+}
+function comprimir(f,max){return new Promise((ok,no)=>{const r=new FileReader();r.onerror=no;r.onload=()=>{const im=new Image();im.onerror=()=>no(new Error('No se pudo leer la foto.'));im.onload=()=>{const k=Math.min(1,max/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?ok(b):no(new Error('No se pudo procesar la foto.')),'image/jpeg',.8)};im.src=r.result};r.readAsDataURL(f)})}
+function dibApoyos(L){
+ const ent=L.filter(x=>x.tipo==='Entrada').reduce((a,x)=>a+(+x.monto||0),0),sal=L.filter(x=>x.tipo==='Entrega').reduce((a,x)=>a+(+x.monto||0),0);
+ return `<div class="stats"><div class="stat"><b>${fmt$(ent)}</b><span>entró</span></div><div class="stat"><b>${fmt$(sal)}</b><span>se entregó</span></div><div class="stat"><b>${fmt$(ent-sal)}</b><span>queda</span></div></div>`+
+ (L.map(x=>`<div class="per card" style="margin-bottom:8px"><p><b>${esc(x.concepto)}</b><small>${esc(x.fecha||'')}${x.especie?' · En especie: '+esc(x.especie):''}</small></p><span class="tag ${x.tipo==='Entrada'?'v':'p'}">${x.tipo}${+x.monto?' '+fmt$(x.monto):''}</span></div>`).join('')||'<p class="lead">Sin movimientos todavía.</p>');
+}
+
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+init().catch(e=>{app.innerHTML=`<p class="warn">No se pudo cargar: ${esc(e.message)}</p>`});
+}
+</script>
+</body>
+</html>
