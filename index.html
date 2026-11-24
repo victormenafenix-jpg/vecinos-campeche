@@ -132,7 +132,7 @@ async function publico(){
  $('hTit').textContent=FR.nombre;$('hSub').textContent='Padrón, avisos y consultas de tu fraccionamiento.';
  if(TOKEN){try{YO=await rpc('yo',{p_token:TOKEN})}catch(e){YO=null}if(!YO||YO.fracc!==FR.id){YO=null;TOKEN=null;toast('Tu link personal no es válido para este fraccionamiento.')}}
  if(YO)$('hUser').textContent=`Hola, ${YO.nombre.split(' ')[0]} · ${YO.casa}`;
- const t=YO?[['avisos','Avisos'],['reportes','Reportes'],['consultas','Consultas'],['apoyos','Apoyos'],['emerg','Emergencias'],['repres','Quién te representa'],['visitas','Visitas'],['reglas','Reglas']]:[['inscribirme','Inscribirme'],['avisos','Avisos'],['reportes','Reportes'],['emerg','Emergencias'],['repres','Quién te representa'],['visitas','Visitas'],['reglas','Reglas']];
+ const t=YO?[['avisos','Avisos'],['reportes','Reportes'],['consultas','Consultas'],['apoyos','Apoyos'],['emerg','Emergencias'],['repres','Quién te representa'],['eleccion','Elección 2027'],['visitas','Visitas'],['reglas','Reglas']]:[['inscribirme','Inscribirme'],['avisos','Avisos'],['reportes','Reportes'],['emerg','Emergencias'],['repres','Quién te representa'],['eleccion','Elección 2027'],['visitas','Visitas'],['reglas','Reglas']];
  setTabs(t);ROUTES={};t.forEach(([k])=>ROUTES[k]=PUB[k]);route();
 }
 const PUB={
@@ -223,6 +223,15 @@ const PUB={
  },
  async emerg(){app.innerHTML=`<h2>Teléfonos de emergencia</h2><p class="lead">Toca un número para llamar. Si tu celular no marca, el número también está escrito.</p><div id="tL">Cargando…</div>`;$('tL').innerHTML=await dibTels(FR)},
  reglas(){app.innerHTML=REGLAS(FR)},
+ async eleccion(){
+  const adm=staff.rol==='admin';
+  app.innerHTML=`<h2>Elección 2027</h2>${adm?'':'<p class="note">Solo el administrador general carga candidaturas, para que sean las mismas en todos los fraccionamientos.</p>'}<div id="eL">Cargando…</div>${adm?FORM_CAND:''}`;
+  const load=async()=>{$('eL').innerHTML=await dibEleccion(FR,adm)};load();
+  $('eL').onclick=async e=>{const id=e.target.dataset.cd;if(!id)return;if(!adm)return toast(NOAUT);if(!await confirmar('¿Quitar esta candidatura?'))return;const {error}=await SB.from('candidaturas').delete().eq('id',id);if(error)return err(error);load()};
+  if(adm){$('cdT').onchange=()=>{$('cdPw').style.display=$('cdT').value==='Coalición'?'':'none';$('cdPo').style.display=$('cdT').value==='Independiente'?'none':''};
+   $('fCd').onsubmit=async e=>{e.preventDefault();const v=i=>$(i).value.trim()||null,c=$('cdC').value;const {error}=await SB.from('candidaturas').insert({cargo:c,distrito:['Diputación federal','Diputación local'].includes(c)?v('cdD'):null,municipio:c==='Presidencia municipal'?(v('cdM')||'Campeche'):null,nombre:v('cdN'),suplente:v('cdS'),tipo:$('cdT').value,postula:$('cdT').value==='Independiente'?null:v('cdP'),partidos:$('cdT').value==='Coalición'?v('cdPs'):null,fuente:v('cdF')});if(error)return err(error);e.target.reset();toast('Candidatura agregada.');load()}}
+ },
+ async eleccion(){app.innerHTML=`<h2>Elección del 6 de junio de 2027</h2><div id="eL">Cargando…</div>`;$('eL').innerHTML=await dibEleccion(FR)},
  async repres(){
   app.innerHTML=`<h2>¿Quién te representa?</h2><p class="lead">Tus representantes según la sección electoral de ${esc(FR.nombre)}. Es información pública; aparecen todos los cargos sin importar el partido.</p><div id="rL">Cargando…</div>`;
   $('rL').innerHTML=await dibRepres(FR);
@@ -264,7 +273,7 @@ async function entrarStaff(){
  $('salir').onclick=async e=>{e.preventDefault();await SB.auth.signOut();location.href=BASE};
  $('cClave').onclick=e=>{e.preventDefault();cambiarClave(false)};
  if($('frSel'))$('frSel').onchange=e=>{FR=FRS.find(f=>f.id===e.target.value);mapSel=null;$('hTit').textContent='Comité · '+FR.nombre;route()};
- const t=[['padron','Padrón'],['mapa','Mapa y casas'],['consultas','Consultas'],['reportes','Reportes'],['avisos','Avisos'],['visitas','Visitas'],['apoyos','Apoyos'],['cumple','Cumpleaños'],['calles','Datos y links'],['reglas','Reglas']];
+ const t=[['padron','Padrón'],['mapa','Mapa y casas'],['consultas','Consultas'],['reportes','Reportes'],['avisos','Avisos'],['visitas','Visitas'],['apoyos','Apoyos'],['cumple','Cumpleaños'],['calles','Datos y links'],['eleccion','Elección 2027'],['reglas','Reglas']];
  if(p.rol==='admin')t.push(['admin','Administración']);
  setTabs(t);ROUTES={};t.forEach(([k])=>ROUTES[k]=ST[k]);
  if(!ROUTES[location.hash.slice(1)])location.hash='#padron';else route();
@@ -462,6 +471,24 @@ const ST={
 };
 
 /* ---------- dibujos compartidos ---------- */
+const FORM_CAND=`<details><summary>Agregar candidatura (solo registros oficiales)</summary><form id="fCd">
+ <label>Cargo<select id="cdC"><option>Gubernatura</option><option>Diputación federal</option><option>Diputación local</option><option>Presidencia municipal</option></select></label>
+ <div class="row"><label>Distrito <small>(solo diputaciones, ej. 01)</small><input id="cdD" maxlength="10"></label><label>Municipio <small>(solo presidencia)</small><input id="cdM" maxlength="60" placeholder="Campeche"></label></div>
+ <div class="row"><label>Nombre<input id="cdN" required maxlength="120"></label><label>Suplente <small>(opcional)</small><input id="cdS" maxlength="120"></label></div>
+ <label>Va por<select id="cdT"><option>Partido</option><option>Coalición</option><option>Independiente</option></select></label>
+ <label id="cdPo">Partido o nombre de la coalición<input id="cdP" maxlength="120"></label>
+ <label id="cdPw" style="display:none">Partidos que forman la coalición<input id="cdPs" maxlength="200" placeholder="Partido A, Partido B, Partido C"></label>
+ <label>Fuente oficial<input id="cdF" required maxlength="300" placeholder="Acuerdo del IEEC / INE de registro, fecha"></label>
+ <button class="btn sm">Agregar</button><p class="para">Carga solo candidaturas ya aprobadas por el IEEC o el INE, de todos los partidos e independientes, sin opiniones.</p></form></details>`;
+async function dibEleccion(f,editable){
+ const {data,error}=await SB.from('candidaturas').select('*').eq('eleccion','2027').order('nombre');if(error)return `<p class="warn">${esc(error.message)}</p>`;
+ const toca=c=>c.cargo==='Gubernatura'||(c.cargo==='Diputación federal'&&c.distrito===f.distrito_federal)||(c.cargo==='Diputación local'&&c.distrito===f.distrito_local)||(c.cargo==='Presidencia municipal'&&(c.municipio||'Campeche')===(f.municipio||'Campeche'));
+ const L=data.filter(toca),grupos=[['Gubernatura','Gubernatura de Campeche'],['Diputación federal','Diputación federal · Distrito '+(f.distrito_federal||'—')],['Diputación local','Diputación local · Distrito '+(f.distrito_local||'—')],['Presidencia municipal','Presidencia municipal de '+(f.municipio||'Campeche')]];
+ const fechas=`<div class="card"><h3>Fechas importantes</h3><p>Precampañas locales: 4 de enero al 12 de febrero de 2027.<br>Registro de candidaturas: finales de marzo e inicios de abril de 2027.<br>Campañas: 14 de abril al 2 de junio de 2027.<br><b>Votación: domingo 6 de junio de 2027.</b></p><p class="para">Fuente: calendario del INE y del IEEC. Pueden ajustarse; confírmalas en ine.mx o ieec.org.mx.</p></div>`;
+ const nota=`<p class="note">Aquí aparecen <b>todas</b> las candidaturas registradas oficialmente ante el IEEC o el INE, de todos los partidos, coaliciones e independientes, en orden alfabético y sin colores ni logos. Vecinos en Red no apoya a ningún candidato.</p>`;
+ if(!L.length)return nota+`<div class="card"><h3>Todavía no hay candidaturas oficiales</h3><p>Los partidos y los aspirantes independientes registran a sus candidatos en la primavera de 2027. En cuanto el IEEC y el INE los aprueben, aparecerán aquí.</p></div>`+fechas;
+ return nota+grupos.map(([k,t])=>{const g=L.filter(c=>c.cargo===k);return g.length?`<h3 style="margin:18px 0 8px">${esc(t)}</h3>`+g.map(c=>`<div class="card"><span class="cat">${c.tipo==='Independiente'?'Candidatura independiente':c.tipo==='Coalición'?'Coalición':'Partido'}</span><h3>${esc(c.nombre)}</h3><p class="meta">${c.tipo==='Independiente'?'Sin partido':esc(c.postula||'')}${c.partidos?' · Partidos: '+esc(c.partidos):''}${c.suplente?' · Suplente: '+esc(c.suplente):''}</p><p class="para">Fuente: ${esc(c.fuente)}</p>${editable?`<button class="btn sm ghost" data-cd="${c.id}">Quitar</button>`:''}</div>`).join(''):''}).join('')+fechas;
+}
 const RCATS=['Alumbrado','Agua y drenaje','Basura y limpieza','Calles y banquetas','Seguridad','Parques y áreas verdes','Otro'];
 const fotoRep=p=>SB.storage.from('reportes').getPublicUrl(p).data.publicUrl;
 function dibReportes(L,extra){return L.map(r=>`<div class="card"><div class="top"><span class="cat">${esc(r.cat)}</span><span class="tag ${r.estado==='Resuelto'?'v':r.estado==='En atención'?'p':'g'}">${r.estado}</span></div><h3>${esc(r.titulo)}</h3>${r.texto?`<p>${esc(r.texto)}</p>`:''}
